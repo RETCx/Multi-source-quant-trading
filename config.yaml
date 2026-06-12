@@ -1,0 +1,25 @@
+# ==========================================
+# Trading Pipeline Configuration
+# ==========================================
+
+data_settings:
+  lookback_years: 9          
+  selected_tickers:
+    - AAPL
+    - NVDA
+    - GOOGL      
+    - AVGO          
+    
+sources:
+  use_tiingo_stocks: true
+  use_tiingo_spy: true
+  use_yfinance_vix: true
+  use_bigquery_news: false
+
+data_path:
+  raw: "data/raw"
+  features: "data/features"
+  models: "data/models"
+
+trading_setup:
+  mode: paper
