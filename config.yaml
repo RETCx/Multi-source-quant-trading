@@ -3,21 +3,28 @@
 # ==========================================
 
 data_settings:
-  lookback_years: 9          
+  lookback_years: 1          
   selected_tickers:
-    - AAPL
-    - NVDA
     - GOOGL      
     - AVGO          
+
+  news_keywords:
+    GOOGL: 'google|alphabet'
+    AVGO: 'broadcom'
     
 sources:
   use_tiingo_stocks: true
   use_tiingo_spy: true
   use_yfinance_vix: true
-  use_bigquery_news: false
+  use_bigquery_news: true
+  # Set to true for local testing, false for server automation
+  require_bq_confirmation: true
 
 data_path:
-  raw: "data/raw"
+  raw: 
+    OHLCV: "data/raw/OHLCV"
+    FUNDAMENTALS: "data/raw/FUNDAMENTALS"
+    NEWS: "data/raw/NEWS"
   features: "data/features"
   models: "data/models"
 
