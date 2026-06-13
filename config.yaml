@@ -3,14 +3,12 @@
 # ==========================================
 
 data_settings:
-  lookback_years: 1          
+  lookback_years: 9          
   selected_tickers:
-    - GOOGL      
-    - AVGO          
+    - GOOGL             
 
   news_keywords:
     GOOGL: 'google|alphabet'
-    AVGO: 'broadcom'
     
 sources:
   use_tiingo_stocks: true

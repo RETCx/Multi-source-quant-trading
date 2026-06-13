@@ -15,7 +15,8 @@ def fetch_vix(start_date, end_date, raw_dir):
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
         df.index = df.index.tz_localize(None)
-        df.rename(columns={'Date':'date','Close':'close','High':'high','Low':'low','Open':'open','Volume':'volume'}, inplace=True)
+        df.index.name = 'date'
+        df.rename(columns={col: col.lower() for col in df.columns}, inplace=True)
         df.to_csv(filepath)
         print("Saved: VIX_raw.csv")
     except Exception as e:

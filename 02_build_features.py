@@ -9,6 +9,7 @@ import src.features.market as mkt
 import src.features.fundamentals as fund
 import src.features.sentiment as sent
 import src.features.time as time
+import src.features.target as tgt
 
 # ==========================================
 # 0. Setup & Load Config
@@ -132,12 +133,16 @@ for ticker in tickers:
         # --- Apply Time Features ---
         time.calc_time_features(df)
 
+        # --- 6. สร้าง Target 5 ระยะเวลา (Multi-Horizon Labels) ---
+        # ใช้ window=252 (ข้อมูลประมาณ 1 ปีทำการ) เพื่อหา Rolling Median
+        tgt.create_multi_horizon_targets(df, horizons=[1, 3, 5, 10, 20], window=252)
         # --- Filter Date Range & Drop Initial Window NaNs ---
         # Moving average of 200 days needs 200 rows of seed data, so we filter after calculation
         # We also want to drop rows that have NaNs due to rolling windows.
         # But we might have NaNs from Market or Fundamentals if they don't cover the full range.
         # df = df[df.index > '2017-10-01'] 
-        df.dropna(inplace=True)
+        feature_cols = [c for c in df.columns if not c.startswith('Target_')]
+        df.dropna(subset=feature_cols, inplace=True)
         
         # Save output to features folder
         df.to_csv(filepath_out)
