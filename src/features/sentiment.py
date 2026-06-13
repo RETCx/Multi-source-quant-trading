@@ -1,0 +1,86 @@
+import pandas as pd
+import numpy as np
+import re
+from scipy import stats
+
+class StockSentimentAnalyzer:
+    def __init__(self):
+        self.mi_records = []
+        self.source_report = {}
+
+    def extract_source(self, url):
+        try:
+            domain = re.search(r'https?://(?:www\.)?([^/]+)', str(url))
+            return domain.group(1) if domain else 'unknown'
+        except: 
+            return 'unknown'
+
+    def calculate_source_quality(self, group):
+        n = len(group)
+        if n < 10: # for filter noise data
+            return pd.Series({'r': 0, 'p_val': 1.0, 'weight': 0.0, 'count': n})
+        
+        if group['sentiment_score'].nunique() <= 1 or group['Daily_Return'].nunique() <= 1:
+            return pd.Series({'r': 0, 'p_val': 1.0, 'weight': 0.0, 'count': n})
+            
+        r, p = stats.pearsonr(group['sentiment_score'], group['Daily_Return'])
+        weight = r if p < 0.05 else 0.0
+        # for filter noise data
+        return pd.Series({'r': r, 'p_val': p, 'weight': weight if abs(r) < 0.95 else 0.0, 'count': n})
+
+    def process_sentiment_features(self, ticker, df_stock, df_news):
+        """
+        work process:  df_stock ( Returns) และ df_news
+        """
+        # 1. Clean News Data
+        # BigQuery saves the date as 'seendate', so we parse it into 'date'
+        if 'seendate' in df_news.columns:
+            df_news['date'] = pd.to_datetime(df_news['seendate'], utc=True).dt.tz_localize(None).dt.normalize()
+        elif 'date' in df_news.columns:
+            df_news['date'] = pd.to_datetime(df_news['date'], utc=True).dt.tz_localize(None).dt.normalize()
+            
+        # Reset index if 'date' is the index to avoid "ambiguous" error during merge
+        if df_stock.index.name == 'date':
+            df_stock = df_stock.reset_index()
+            
+        df_stock['date'] = pd.to_datetime(df_stock['date']).dt.tz_localize(None).dt.normalize()
+        
+        # for filter noise data
+        foreign_domains = ['.cn', '.cz', '.ps', '.it', '.ru', 'baidu.com', '163.com']
+        df_news = df_news[~df_news['url'].str.contains('|'.join(foreign_domains), case=False, na=False)]
+        df_news = df_news[(df_news['sentiment_score'] > 0.5) | (df_news['sentiment_score'] < -0.5)]
+
+        # 2. Source Reliability
+        df_news['Source'] = df_news['url'].apply(self.extract_source)
+        df_merged_train = pd.merge(df_news, df_stock[['date', 'adjClose']], on='date')
+        df_merged_train['Daily_Return'] = df_merged_train.groupby('date')['adjClose'].pct_change()
+        
+        quality_df = df_merged_train.groupby('Source').apply(self.calculate_source_quality)
+        self.source_report[ticker] = quality_df.sort_values('weight', ascending=False)
+        
+        # 3. Sentiment Calculation (Weighted)
+        weight_map = quality_df['weight'].to_dict()
+        df_news['Weighted_Sent'] = df_news['sentiment_score'] * df_news['Source'].map(weight_map).fillna(0)
+        
+        daily_news = df_news.groupby('date').agg(
+            Daily_Sent=('Weighted_Sent', 'sum'),
+            News_Vol=('url', 'count')
+        ).reset_index()
+
+        # 4. Merge Back to Main Stock DF
+        df = pd.merge(df_stock, daily_news, on='date', how='left').fillna(0)
+        
+        # 5. Feature Engineering (Lags & Momentum)
+        df['Sent_Decay_3D'] = df['Daily_Sent'].ewm(span=3, adjust=False).mean()
+        df['Sent_Momentum'] = df['Daily_Sent'] * np.log1p(df['News_Vol'])
+        df['Sent_ZScore'] = (df['Daily_Sent'] - df['Daily_Sent'].rolling(20).mean()) / df['Daily_Sent'].rolling(20).std().replace(0, 1)
+        
+        # Lags ( for Look-ahead bias)
+        df['Sent_Decay_3D_Lag1'] = df['Sent_Decay_3D'].shift(1)
+        df['Sent_Momentum_Lag1'] = df['Sent_Momentum'].shift(1)
+        df['Sent_ZScore_Lag1'] = df['Sent_ZScore'].shift(1)
+        
+        df['Gap_Return'] = (df['adjOpen'] / df['adjClose'].shift(1)) - 1
+        df['Sent_Gap_Interaction'] = df['Sent_Momentum_Lag1'] * df['Gap_Return']
+        
+        return df.fillna(0)
