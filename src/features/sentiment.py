@@ -52,8 +52,14 @@ class StockSentimentAnalyzer:
 
         # 2. Source Reliability
         df_news['Source'] = df_news['url'].apply(self.extract_source)
-        df_merged_train = pd.merge(df_news, df_stock[['date', 'adjClose']], on='date')
-        df_merged_train['Daily_Return'] = df_merged_train.groupby('date')['adjClose'].pct_change()
+        
+        # Calculate daily return on stock dataframe first
+        stock_returns = df_stock[['date', 'adjClose']].copy()
+        stock_returns = stock_returns.sort_values('date')
+        stock_returns['Daily_Return'] = stock_returns['adjClose'].pct_change()
+        
+        df_merged_train = pd.merge(df_news, stock_returns[['date', 'Daily_Return']], on='date')
+        df_merged_train = df_merged_train.dropna(subset=['Daily_Return', 'sentiment_score'])
         
         quality_df = df_merged_train.groupby('Source').apply(self.calculate_source_quality)
         self.source_report[ticker] = quality_df.sort_values('weight', ascending=False)
