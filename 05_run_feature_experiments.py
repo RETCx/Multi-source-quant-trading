@@ -87,6 +87,14 @@ EXPERIMENTS = [
             'daily_PE', 'daily_PBV', 'PE_SMA200', 'PBV_SMA200',
         ],
     },
+    {
+        'name': 'Shootout: SMA200 Only (Drop EMA200)',
+        'exclude': BASE_EXCLUDE + ['EMA200'],
+    },
+    {
+        'name': 'Shootout: EMA200 Only (Drop SMA200)',
+        'exclude': BASE_EXCLUDE + ['SMA200'],
+    },
 ]
 
 # ==========================================
