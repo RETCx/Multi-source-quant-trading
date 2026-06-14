@@ -6,16 +6,10 @@ import torch
 import shutil
 import pickle
 from datetime import datetime
-from sklearn.preprocessing import RobustScaler
-from sklearn.metrics import accuracy_score
-
-from src.data_pipeline.walk_forward import WalkForwardCV
-from src.data_pipeline.sequence import create_multi_horizon_sequences, get_dataloaders
-from src.models.architecture import MultiHorizonLSTM
-from src.models.trainer import MultiHeadTrainer
-from src.evaluation.ensemble import ensemble_overlapping_predictions
 from src.evaluation.metrics import evaluate_and_report, create_model_comparison_df
 from src.evaluation.tracker import ExperimentManager
+from src.models.pipeline import run_walk_forward_pipeline
+from src.data_pipeline.walk_forward import WalkForwardCV
 from src.utils import set_seed
 
 # ==========================================
@@ -61,6 +55,7 @@ y_raw = df[TARGET_COLS].values
 
 print(f"Data Shape: {X_raw.shape[0]} rows, {X_raw.shape[1]} features")
 print(f"Excluded: {len(EXCLUDE_COLS)} columns | Targets: {len(TARGET_COLS)}")
+print(f"Active Features ({len(features)}): {features}")
 
 # ==========================================
 # 2. WALK-FORWARD SPLITTER

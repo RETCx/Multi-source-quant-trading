@@ -146,6 +146,7 @@ for exp_i, experiment in enumerate(EXPERIMENTS):
     n_heads = len(TARGET_COLS)
     
     print(f"Features: {len(features)} columns")
+    print(f"Active Features: {features}")
     
     from src.models.pipeline import run_walk_forward_pipeline
     
