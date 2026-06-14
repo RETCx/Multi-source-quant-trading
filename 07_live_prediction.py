@@ -1,9 +1,11 @@
 import os
+import sys
 import yaml
 import json
 import torch
 import numpy as np
 import pandas as pd
+import subprocess
 from sklearn.preprocessing import RobustScaler
 
 from src.models.architecture import MultiHorizonLSTM
@@ -13,6 +15,14 @@ from src.utils import set_seed
 def load_config():
     with open('config.yaml', 'r') as f:
         return yaml.safe_load(f)
+
+def run_script(script_name):
+    print(f"\n[SYSTEM] Running {script_name}...")
+    result = subprocess.run([sys.executable, script_name])
+    if result.returncode != 0:
+        print(f"[ERROR] {script_name} failed. Cannot proceed with Live Prediction.")
+        sys.exit(result.returncode)
+    print(f"[SYSTEM] {script_name} completed successfully.")
 
 def get_best_features(stock, default_features):
     path = f"data/models/best_features_{stock}.json"
@@ -24,14 +34,19 @@ def get_best_features(stock, default_features):
 
 def main():
     print("="*60)
-    print("🚀 QUANTITATIVE TRADING - LIVE DEPLOYMENT")
+    print("QUANTITATIVE TRADING - LIVE DEPLOYMENT")
     print("="*60)
+    
+    print("\n[1] Synchronizing Live Market Data (Running Pipeline...)")
+    # Execute the data fetching and feature engineering pipeline to get today's data
+    run_script("01_fetch_data.py")
+    run_script("02_build_features.py")
     
     config = load_config()
     stock = config['data_settings']['selected_tickers'][0]
     data_path = f"{config['data_path']['features']}/{stock}_with_indicators.csv"
     
-    print(f"[1] Loading latest market data for {stock}...")
+    print(f"\n[2] Loading synchronized market data for {stock}...")
     df = pd.read_csv(data_path, index_col='date', parse_dates=True)
     
     # We need Targets to train the model up to yesterday
@@ -42,7 +57,7 @@ def main():
     fallback_features = [c for c in df.columns if c not in target_cols and c not in base_exclude]
     features = get_best_features(stock, fallback_features)
     
-    print(f"[2] Using {len(features)} optimal features...")
+    print(f"[3] Using {len(features)} optimal features (Loaded from Auto Feature Selection)...")
     
     # Separate data into Training Set (where targets are known) and Prediction Set (Today -> Predicts Tomorrow)
     # Targets are NaN for the most recent rows because they haven't happened yet.
@@ -57,7 +72,7 @@ def main():
         print("[ERROR] Not enough recent data to form a sequence!")
         return
         
-    print(f"[3] Training Live Model on {len(df_train)} historical days...")
+    print(f"[4] Fast-Training Live Model on {len(df_train)} historical days...")
     
     X_train_raw = df_train[features].values
     y_train_raw = df_train[target_cols].values
@@ -93,7 +108,7 @@ def main():
     # We do a fast train on all data (No Validation Split since we just want to overfit to recent regime)
     optimizer = torch.optim.Adam(model.parameters(), lr=config['model_params']['learning_rate'])
     criterion = torch.nn.BCELoss()
-    epochs = 30 # Fast production train
+    epochs = 100 # Fast production train
     
     model.train()
     for ep in range(epochs):
@@ -107,7 +122,7 @@ def main():
             loss.backward()
             optimizer.step()
             
-    print("[4] Model Training Complete. Running Live Inference...")
+    print("[5] Model Training Complete. Running Live Inference...")
     
     # Live Inference (Predict Tomorrow)
     model.eval()
@@ -117,7 +132,7 @@ def main():
         preds = model(live_tensor)
         
     print("\n" + "="*60)
-    print(f"🔮 LIVE PREDICTIONS FOR: TOMORROW")
+    print(f"LIVE PREDICTIONS FOR: TOMORROW")
     print("="*60)
     
     best_prob = 0
@@ -136,7 +151,7 @@ def main():
             best_horizon = int(tgt.split('_')[1].replace('D',''))
             best_dir = direction
             
-    print("\n[5] Execution Strategy (Based on config.yaml):")
+    print("\n[6] Execution Strategy (Based on config.yaml):")
     bt_config = config['backtest']
     prob_threshold = bt_config.get('prob_threshold', 85)
     
