@@ -55,7 +55,28 @@ def run_walk_forward_pipeline(
         
         # 2. Sequence Creation
         X_tr_seq, y_tr_seq = create_multi_horizon_sequences(X_tr, y_raw[train_idx], params['sequence_length'])
-        X_te_seq, y_te_seq = create_multi_horizon_sequences(X_te, y_raw[test_idx], params['sequence_length'])
+
+        # For the test set, we need the last 'sequence_length' points from the training/gap data
+        # to predict the first test point. So we must prepend them to X_te.
+        if len(train_idx) > 0:
+            # Get the exact indices from X_raw to pass into the scaler
+            prepended_idx = np.arange(test_idx[0] - params['sequence_length'], test_idx[0])
+            # Handle edge case where there might not be enough data before test_idx[0]
+            prepended_idx = prepended_idx[prepended_idx >= 0]
+
+            # Transform prepended data using the scaler fitted on train
+            X_prepended = scaler.transform(X_raw[prepended_idx])
+            X_te_full = np.concatenate([X_prepended, X_te])
+
+            # y_te should still only correspond to the actual test predictions,
+            # but create_multi_horizon_sequences expects y_raw aligned with the features.
+            # We must also prepend y_raw
+            y_prepended = y_raw[prepended_idx]
+            y_te_full = np.concatenate([y_prepended, y_raw[test_idx]])
+
+            X_te_seq, y_te_seq = create_multi_horizon_sequences(X_te_full, y_te_full, params['sequence_length'])
+        else:
+            X_te_seq, y_te_seq = create_multi_horizon_sequences(X_te, y_raw[test_idx], params['sequence_length'])
         
         if len(X_tr_seq) < params['batch_size'] or len(X_te_seq) < 5:
             if verbose:

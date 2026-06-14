@@ -26,10 +26,11 @@ def merge_and_calc_fundamentals(price_df, fund_df):
     
     df_merged = pd.merge_asof(price_df, fund_df, left_index=True, right_index=True, direction='backward')
     
-    # 2. Backward Fill (bfill) 
-    # For dates in price_df that are strictly BEFORE the very first date in fund_df
-    fund_cols = fund_df.columns
-    df_merged[fund_cols] = df_merged[fund_cols].bfill()
+    # 2. Forward Fill instead of Backward Fill to prevent look-ahead bias
+    # Backward fill leaks future fundamentals to the past.
+    # For dates strictly BEFORE the very first date in fund_df, they will be NaN.
+    # It is safer to drop/ignore those initial days later than to bfill and introduce leakage.
+    pass
     
     # 3. calculate EPS (using TTM EPS or calculate from Net Income TTM / Shares)
     if 'EPS_TTM' in df_merged.columns:
