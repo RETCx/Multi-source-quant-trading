@@ -161,6 +161,10 @@ def save_backtest_artifacts(bt_result: dict, metrics: dict, model_dir: str, pref
     # Save logs
     if len(bt_result['trade_log']) > 0:
         exp_mgr.save_dataframe(bt_result['trade_log'], "trade_log.csv")
+    
+    if 'daily_signals' in bt_result and len(bt_result['daily_signals']) > 0:
+        exp_mgr.save_dataframe(bt_result['daily_signals'], "daily_signals.csv")
+        
     metrics_df = pd.DataFrame([metrics])
     exp_mgr.save_dataframe(metrics_df, "backtest_metrics.csv")
     

@@ -139,6 +139,7 @@ def run_dynamic_backtest(
     
     daily_equity  = []
     trade_details = []
+    daily_signals = []
     
     #  probability  Adaptive Threshold
     past_probs = []
@@ -154,8 +155,14 @@ def run_dynamic_backtest(
         today_low   = lows[i]
         today_close = closes[i]
         
+        yesterday_prob = 0.0
+        yesterday_dir = 0
+        yesterday_h = 0
+        thresh = 0.0
+        action = "Skipped (Day 0)"
+        
         # ---- Entry Logic () ----
-        if not in_position and i > 0:
+        if i > 0:
             yesterday_prob  = signal_prob[i - 1]
             yesterday_dir   = signal_dir[i - 1]
             yesterday_h     = signal_h[i - 1]
@@ -166,25 +173,45 @@ def run_dynamic_backtest(
                 thresh = np.percentile(valid_past, prob_threshold_pct)
             else:
                 thresh = 0.55  # default if insufficient data
-            
-            if yesterday_prob >= thresh and yesterday_dir != 0 and yesterday_h > 0:
-                in_position      = True
-                entry_idx        = i
-                entry_price      = today_open
-                trade_side       = "Long" if yesterday_dir == 1 else "Short"
-                hold_days_target = yesterday_h
-                entry_prob       = yesterday_prob
-                entry_thresh     = thresh
                 
-                # ATR Stop Loss  ATR 
-                atr_val = atr_series[i - 1]
-                if not np.isnan(atr_val):
-                    if trade_side == "Long":
-                        sl_price = entry_price - sl_multiplier * atr_val
+            if in_position:
+                action = "Skipped (Already in position)"
+            else:
+                if yesterday_prob >= thresh and yesterday_dir != 0 and yesterday_h > 0:
+                    action = f"Traded ({'Long' if yesterday_dir == 1 else 'Short'})"
+                    in_position      = True
+                    entry_idx        = i
+                    entry_price      = today_open
+                    trade_side       = "Long" if yesterday_dir == 1 else "Short"
+                    hold_days_target = yesterday_h
+                    entry_prob       = yesterday_prob
+                    entry_thresh     = thresh
+                    
+                    # ATR Stop Loss  ATR 
+                    atr_val = atr_series[i - 1]
+                    if not np.isnan(atr_val):
+                        if trade_side == "Long":
+                            sl_price = entry_price - sl_multiplier * atr_val
+                        else:
+                            sl_price = entry_price + sl_multiplier * atr_val
                     else:
-                        sl_price = entry_price + sl_multiplier * atr_val
+                        sl_price = entry_price * (0.95 if trade_side == "Long" else 1.05)
                 else:
-                    sl_price = entry_price * (0.95 if trade_side == "Long" else 1.05)
+                    if yesterday_prob == 0:
+                        action = "Skipped (No signal)"
+                    elif yesterday_prob < thresh:
+                        action = f"Skipped (Confidence {yesterday_prob:.4f} < Threshold {thresh:.4f})"
+                    else:
+                        action = "Skipped (Invalid signal)"
+        
+        daily_signals.append({
+            'Date': df_prices.index[i].strftime('%Y-%m-%d'),
+            'Max_Confidence': yesterday_prob,
+            'Threshold': thresh,
+            'Target_Horizon': yesterday_h,
+            'Direction': yesterday_dir,
+            'Action': action
+        })
         
         #  probability  threshold 
         if signal_prob[i] > 0:
@@ -256,6 +283,7 @@ def run_dynamic_backtest(
     # ====================================================
     equity_curve = pd.Series(daily_equity, index=df_prices.index)
     trade_log    = pd.DataFrame(trade_details)
+    daily_signals_df = pd.DataFrame(daily_signals)
     total_return = (balance / initial_capital) - 1
     
     # Benchmark: Buy & Hold adjClose
@@ -266,6 +294,7 @@ def run_dynamic_backtest(
         'equity_curve':   equity_curve,
         'benchmark':      benchmark,
         'trade_log':      trade_log,
+        'daily_signals':  daily_signals_df,
         'final_value':    balance,
         'total_return':   total_return,
         'initial_capital': initial_capital,
