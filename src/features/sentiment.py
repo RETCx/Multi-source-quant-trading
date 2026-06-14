@@ -28,7 +28,7 @@ class StockSentimentAnalyzer:
         # for filter noise data
         return pd.Series({'r': r, 'p_val': p, 'weight': weight if abs(r) < 0.95 else 0.0, 'count': n})
 
-    def process_sentiment_features(self, ticker, df_stock, df_news):
+    def process_sentiment_features(self, ticker, df_stock, df_news, train_end_date=None):
         """
         work process:  df_stock ( Returns)  df_news
         """
@@ -61,8 +61,15 @@ class StockSentimentAnalyzer:
         df_merged_train = pd.merge(df_news, stock_returns[['date', 'Daily_Return']], on='date')
         df_merged_train = df_merged_train.dropna(subset=['Daily_Return', 'sentiment_score'])
         
-        quality_df = df_merged_train.groupby('Source').apply(self.calculate_source_quality)
-        self.source_report[ticker] = quality_df.sort_values('weight', ascending=False)
+        # Prevent lookahead bias: compute source quality only using training period (if specified)
+        if train_end_date is not None:
+            df_merged_train = df_merged_train[df_merged_train['date'] <= pd.to_datetime(train_end_date)]
+
+        if df_merged_train.empty:
+             quality_df = pd.DataFrame(columns=['Source', 'r', 'p_val', 'weight', 'count']).set_index('Source')
+        else:
+             quality_df = df_merged_train.groupby('Source').apply(self.calculate_source_quality)
+        self.source_report[ticker] = quality_df.sort_values('weight', ascending=False) if not quality_df.empty else quality_df
         
         # 3. Sentiment Calculation (Weighted)
         weight_map = quality_df['weight'].to_dict()

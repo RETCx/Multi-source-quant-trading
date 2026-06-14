@@ -123,8 +123,15 @@ for ticker in tickers:
         news_path = f"{DIR_NEWS}/{ticker}_news_raw.csv"
         if os.path.exists(news_path):
             news_df = pd.read_csv(news_path)
+
+            # To strictly prevent look-ahead bias, we must define when the 'train' period ends.
+            # In a walk-forward setting, this should ideally be done per-fold dynamically.
+            # But since features are built once, we approximate by using data up to the last year
+            # for source quality calculation, leaving the last year for OOS.
+            train_end_date = pd.to_datetime(config['backtest'].get('start_date', '2024-01-01'))
+
             # This function uses merge on 'date', which resets the index.
-            df = sentiment_analyzer.process_sentiment_features(ticker, df, news_df)
+            df = sentiment_analyzer.process_sentiment_features(ticker, df, news_df, train_end_date=train_end_date)
             if 'date' in df.columns:
                 # Convert 'date' back to datetime index 
                 df['date'] = pd.to_datetime(df['date'])
