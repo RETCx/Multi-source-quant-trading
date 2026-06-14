@@ -7,15 +7,15 @@ REM ============================================================
 REM Set working directory to where this .bat file lives
 cd /d "%~dp0"
 
-REM Activate virtual environment (if exists)
-IF EXIST ".venv\Scripts\activate.bat" (
-    call .venv\Scripts\activate.bat
-    echo [BOT] Virtual environment activated.
-) ELSE IF EXIST "venv\Scripts\activate.bat" (
-    call venv\Scripts\activate.bat
-    echo [BOT] Virtual environment activated.
+REM ============================================================
+REM Activate Conda Environment
+REM ============================================================
+REM เปลี่ยนชื่อ 'base' เป็นชื่อ Conda Env ของคุณ (เช่น quant_env)
+call conda activate trading_ai
+IF %ERRORLEVEL% NEQ 0 (
+    echo [BOT] Warning: Could not activate Conda environment. Trying to run with default python...
 ) ELSE (
-    echo [BOT] No venv found. Using system Python.
+    echo [BOT] Conda environment activated successfully.
 )
 
 REM Run the daily pipeline
@@ -23,3 +23,4 @@ echo [BOT] Starting daily pipeline at %date% %time%
 python 08_daily_execution.py
 
 echo [BOT] Pipeline finished at %date% %time%
+pause

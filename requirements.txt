@@ -1,0 +1,14 @@
+pandas
+numpy
+scikit-learn
+torch
+pyyaml
+google-cloud-bigquery
+db-dtypes
+requests
+python-dotenv
+yfinance
+tqdm
+scipy
+matplotlib
+pytest
