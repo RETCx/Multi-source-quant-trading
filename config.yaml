@@ -111,7 +111,7 @@ backtest:
   sl_multiplier: 2.0          # ATR multiplier for Stop Loss
   atr_column: ATR14           # Column name for ATR in the feature CSV
   start_date: "2025-01-01"    # Backtest start date (null = use all data)
-  end_date:   "2026-01-31"    # Backtest end date   (null = use all data)
+  end_date:   "2026-06-12"    # Backtest end date   (null = use all data)
 
 # --- Trading Setup ---
 trading_setup:
