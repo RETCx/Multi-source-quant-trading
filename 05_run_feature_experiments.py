@@ -133,7 +133,7 @@ scoreboard = []
 # ==========================================
 for exp_i, experiment in enumerate(EXPERIMENTS):
     exp_name    = experiment['name']
-    exclude_set = set(experiment['exclude'])
+    exclude_set = set(experiment['exclude']).union(set(BASE_EXCLUDE))
     
     print(f"\n{'#'*60}")
     print(f"EXPERIMENT {exp_i+1}/{len(EXPERIMENTS)}: {exp_name}")
