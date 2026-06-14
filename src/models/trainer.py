@@ -14,6 +14,7 @@ class MultiHeadTrainer:
         # Binary Cross Entropy for Sigmoid output
         self.criterion = nn.BCELoss() 
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate, weight_decay=1e-4)
+        self.n_heads = len(model.heads)  # dynamic: driven by config
 
     def train_fold(self, train_loader, test_loader):
         """Train 1 Fold and return Test Set Prediction (Out-of-Sample)"""
@@ -32,9 +33,9 @@ class MultiHeadTrainer:
                 
                 outs = self.model(xb)
                 
-                # Sum Loss from 5 heads
+                # Sum Loss from all heads
                 loss = 0
-                for i in range(5):
+                for i in range(self.n_heads):
                     loss += self.criterion(outs[i].squeeze(), yb[:, i])
                     
                 loss.backward()
@@ -47,7 +48,7 @@ class MultiHeadTrainer:
                 for xb, yb in test_loader:
                     xb, yb = xb.to(self.device), yb.to(self.device)
                     outs = self.model(xb)
-                    for i in range(5):
+                    for i in range(self.n_heads):
                         val_loss += self.criterion(outs[i].squeeze(), yb[:, i]).item()
                         
             if val_loss < best_loss:
@@ -66,7 +67,7 @@ class MultiHeadTrainer:
         self.model.eval()
 
         # --- Calculate Train Accuracy (In-Sample) ---
-        train_correct = {i: 0 for i in range(5)}
+        train_correct = {i: 0 for i in range(self.n_heads)}
         train_total = 0
         with torch.no_grad():
             for xb, yb in train_loader:
@@ -74,27 +75,27 @@ class MultiHeadTrainer:
                 outs = self.model(xb)
                 train_total += yb.size(0)
                 
-                for i in range(5):
+                for i in range(self.n_heads):
                     preds = (outs[i].squeeze() > 0.5).int()
                     trues = yb[:, i].int()
                     train_correct[i] += (preds == trues).sum().item()
                     
-        train_accs = {i: train_correct[i] / train_total for i in range(5)}
+        train_accs = {i: train_correct[i] / train_total for i in range(self.n_heads)}
         
         # Collect Test Set Predictions (Out-of-sample)
-        fold_preds = {i: [] for i in range(5)}
-        fold_trues = {i: [] for i in range(5)}
-        fold_probas = {i: [] for i in range(5)}
+        fold_preds  = {i: [] for i in range(self.n_heads)}
+        fold_trues  = {i: [] for i in range(self.n_heads)}
+        fold_probas = {i: [] for i in range(self.n_heads)}
         
         with torch.no_grad():
             for xb, yb in test_loader:
                 xb = xb.to(self.device)
                 outs = self.model(xb)
                 
-                for i in range(5):
+                for i in range(self.n_heads):
                     probas = outs[i].squeeze().cpu().numpy()
-                    preds = (probas > 0.5).astype(int)
-                    trues = yb[:, i].cpu().numpy().astype(int)
+                    preds  = (probas > 0.5).astype(int)
+                    trues  = yb[:, i].cpu().numpy().astype(int)
                     
                     fold_probas[i].extend(probas)
                     fold_preds[i].extend(preds)
