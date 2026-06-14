@@ -22,7 +22,7 @@ def run_rf_proxy_wfa(X, y, df_prices, features, target_cols, cv_config, bt_confi
     step_size = cv_config['step_size']
     gap = cv_config['gap']
     
-    ensembled_oos = {target: {'indices': [], 'probas': []} for target in target_cols}
+    ensembled_oos = {target: {'indices': [], 'probas': [], 'preds': [], 'trues': []} for target in target_cols}
     feature_importances = np.zeros(len(features))
     fold_count = 0
     
@@ -35,10 +35,11 @@ def run_rf_proxy_wfa(X, y, df_prices, features, target_cols, cv_config, bt_confi
             test_end = n_samples
             
         X_train, y_train = X[start_idx:train_end], y[start_idx:train_end]
-        X_test = X[test_start:test_end]
+        X_test, y_test = X[test_start:test_end], y[test_start:test_end]
         
         for i, target in enumerate(target_cols):
             y_train_tgt = y_train[:, i]
+            y_test_tgt = y_test[:, i]
             
             # Fast Proxy Model
             clf = RandomForestClassifier(n_estimators=30, max_depth=5, random_state=42, n_jobs=-1)
@@ -46,9 +47,12 @@ def run_rf_proxy_wfa(X, y, df_prices, features, target_cols, cv_config, bt_confi
             
             # Predict OOS
             probas = clf.predict_proba(X_test)[:, 1] if len(clf.classes_) > 1 else np.zeros(len(X_test))
+            preds = (probas > 0.5).astype(int)
             
             ensembled_oos[target]['indices'].extend(range(test_start, test_end))
             ensembled_oos[target]['probas'].extend(probas)
+            ensembled_oos[target]['preds'].extend(preds)
+            ensembled_oos[target]['trues'].extend(y_test_tgt)
             
             # Aggregate importance
             feature_importances += clf.feature_importances_
@@ -82,21 +86,29 @@ def run_rf_proxy_wfa(X, y, df_prices, features, target_cols, cv_config, bt_confi
     
     return sharpe, feature_importances
 
+import logging
+
 def main():
     config = load_config()
     stock = config['data_settings']['selected_tickers'][0]
     data_path = f"{config['data_path']['features']}/{stock}_with_indicators.csv"
     
-    print(f"[{stock}] Starting Automated Feature Selection (RFECV Proxy)...")
+    # Setup logging
+    log_file = f"data/models/feature_selection_{stock}.log"
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler()
+        ]
+    )
+    
+    logging.info(f"[{stock}] Starting Automated Feature Selection (RFECV Proxy)...")
     
     df = pd.read_csv(data_path, index_col='date', parse_dates=True)
     target_cols = config.get('target_columns', ['Target_1D', 'Target_3D', 'Target_5D', 'Target_7D', 'Target_10D'])
     df = df.dropna(subset=target_cols)
-    
-    # Filter Date Range if needed for faster testing (Optional, but good for proxy)
-    # bt_start = config['backtest'].get('start_date')
-    # if bt_start:
-    #     df = df[df.index >= bt_start]
         
     base_exclude = config.get('exclude_columns', [])
     current_features = [c for c in df.columns if c not in target_cols and c not in base_exclude]
@@ -107,13 +119,13 @@ def main():
         X = df[current_features].values
         y = df[target_cols].values
         
-        print(f"\nEvaluating {len(current_features)} features...")
+        logging.info(f"\nEvaluating {len(current_features)} features...")
         sharpe, importances = run_rf_proxy_wfa(
             X, y, df, current_features, target_cols, 
             config['walk_forward'], config['backtest'], df.index
         )
         
-        print(f"-> Sharpe Ratio: {sharpe:.3f}")
+        logging.info(f"-> Sharpe Ratio: {sharpe:.3f}")
         history.append({
             'num_features': len(current_features),
             'sharpe': sharpe,
@@ -123,21 +135,21 @@ def main():
         # Drop the least important feature
         least_important_idx = np.argmin(importances)
         dropped_feature = current_features.pop(least_important_idx)
-        print(f"-> Dropped worst feature: {dropped_feature}")
+        logging.info(f"-> Dropped worst feature: {dropped_feature}")
         
     # Find Best
     best_run = max(history, key=lambda x: x['sharpe'])
-    print("\n" + "="*50)
-    print("🎯 OPTIMAL FEATURE SET FOUND!")
-    print(f"Optimal Size: {best_run['num_features']} features")
-    print(f"Max Sharpe Ratio: {best_run['sharpe']:.3f}")
-    print("="*50)
+    logging.info("\n" + "="*50)
+    logging.info("🎯 OPTIMAL FEATURE SET FOUND!")
+    logging.info(f"Optimal Size: {best_run['num_features']} features")
+    logging.info(f"Max Sharpe Ratio: {best_run['sharpe']:.3f}")
+    logging.info("="*50)
     
     # Save to JSON
     out_file = f"data/models/best_features_{stock}.json"
     with open(out_file, 'w') as f:
         json.dump(best_run, f, indent=4)
-    print(f"Saved optimal features to: {out_file}")
+    logging.info(f"Saved optimal features to: {out_file}")
 
 if __name__ == "__main__":
     main()
