@@ -48,8 +48,20 @@ print(f"\n[{STOCK_SYMBOL}] Loading data and preparing features...")
 df = pd.read_csv(DATA_PATH, index_col='date', parse_dates=True)
 df = df.dropna(subset=TARGET_COLS)
 
+import json
+
 # Filter features: exclude targets + excluded columns from config
-features = [col for col in df.columns if col not in TARGET_COLS + EXCLUDE_COLS]
+fallback_features = [col for col in df.columns if col not in TARGET_COLS + EXCLUDE_COLS]
+
+best_features_path = config.get('best_features_path')
+if best_features_path and os.path.exists(best_features_path):
+    print(f"[INFO] Loading optimal features from {best_features_path}...")
+    with open(best_features_path, 'r') as f:
+        best_data = json.load(f)
+        features = best_data.get('features', fallback_features)
+else:
+    features = fallback_features
+
 X_raw = df[features].values
 y_raw = df[TARGET_COLS].values 
 

@@ -80,6 +80,9 @@ exclude_columns:
   - EPS
   - Net_Income
 
+# Use best features from feature selection (set to null to use all features)
+best_features_path: "data/models/best_features_GOOGL.json"
+
 # --- Multi-Head LSTM Parameters ---
 model_params:
   sequence_length: 15         # Lookback window (15 trading days)
@@ -102,7 +105,7 @@ walk_forward:
 # --- Backtest Configuration ---
 backtest:
   initial_capital: 100000
-  position_size: 0.5          # Percentage of capital to invest per trade (1.0 = 100%)
+  position_size: 0.7         # Percentage of capital to invest per trade (1.0 = 100%)
   transaction_cost: 0.001     # 0.1% per trade (entry + exit)
   prob_threshold: 70          # Percentile for adaptive probability threshold
   sl_multiplier: 2.0          # ATR multiplier for Stop Loss
