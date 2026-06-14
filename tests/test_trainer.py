@@ -32,7 +32,7 @@ def test_trainer_smoke_test(tiny_dataloaders):
     trainer = MultiHeadTrainer(model, epochs=2)
     
     # 2. Run Train
-    fold_preds, fold_probas, fold_trues = trainer.train_fold(train_loader, test_loader)
+    fold_preds, fold_probas, fold_trues, train_accs, best_epoch, stopped_epoch = trainer.train_fold(train_loader, test_loader)
     
     # 3. Check Trainer Return 5 Heads
     assert len(fold_preds) == 5, "Trainer must return predictions for 5 heads"

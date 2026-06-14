@@ -19,8 +19,10 @@ class MultiHeadTrainer:
         """Train 1 Fold and return Test Set Prediction (Out-of-Sample)"""
         best_loss = float('inf')
         patience_counter = 0
+        best_epoch_idx = 0
         best_weights = copy.deepcopy(self.model.state_dict())
         
+        stopped_epoch = self.epochs - 1
         for epoch in range(self.epochs):
             # --- TRAIN MODE ---
             self.model.train()
@@ -50,22 +52,40 @@ class MultiHeadTrainer:
                         
             if val_loss < best_loss:
                 best_loss = val_loss
+                best_epoch_idx = epoch
                 patience_counter = 0
                 best_weights = copy.deepcopy(self.model.state_dict())
             else:
                 patience_counter += 1
                 if patience_counter >= self.patience:
+                    stopped_epoch = epoch
                     break # Early stop trigger
                     
         # Load best model weights for this fold
         self.model.load_state_dict(best_weights)
+        self.model.eval()
+
+        # --- Calculate Train Accuracy (In-Sample) ---
+        train_correct = {i: 0 for i in range(5)}
+        train_total = 0
+        with torch.no_grad():
+            for xb, yb in train_loader:
+                xb, yb = xb.to(self.device), yb.to(self.device)
+                outs = self.model(xb)
+                train_total += yb.size(0)
+                
+                for i in range(5):
+                    preds = (outs[i].squeeze() > 0.5).int()
+                    trues = yb[:, i].int()
+                    train_correct[i] += (preds == trues).sum().item()
+                    
+        train_accs = {i: train_correct[i] / train_total for i in range(5)}
         
         # Collect Test Set Predictions (Out-of-sample)
         fold_preds = {i: [] for i in range(5)}
         fold_trues = {i: [] for i in range(5)}
         fold_probas = {i: [] for i in range(5)}
         
-        self.model.eval()
         with torch.no_grad():
             for xb, yb in test_loader:
                 xb = xb.to(self.device)
@@ -80,4 +100,4 @@ class MultiHeadTrainer:
                     fold_preds[i].extend(preds)
                     fold_trues[i].extend(trues)
                     
-        return fold_preds, fold_probas, fold_trues
+        return fold_preds, fold_probas, fold_trues, train_accs, best_epoch_idx, stopped_epoch
