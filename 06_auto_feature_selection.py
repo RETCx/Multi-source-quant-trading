@@ -113,7 +113,9 @@ def main():
     
     df = pd.read_csv(data_path, index_col='date', parse_dates=True)
     target_cols = config.get('target_columns', ['Target_1D', 'Target_3D', 'Target_5D', 'Target_7D', 'Target_10D'])
-    df = df.dropna(subset=target_cols)
+    
+    # Drop rows with NaN targets or NaN features (like the first 200 days of SMA200)
+    df = df.dropna()
         
     base_exclude = config.get('exclude_columns', [])
     current_features = [c for c in df.columns if c not in target_cols and c not in base_exclude]
