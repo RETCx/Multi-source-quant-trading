@@ -21,7 +21,7 @@ def test_walk_forward_expanding_window():
     assert len(folds) > 0, "Folds must not be empty"
     train_idx, test_idx = folds[0]
     
-    # กฎเหล็กของ Time-Series: Train ต้องมาก่อน Test เสมอ และต้องมี Gap
+    #  Time-Series: Train  Test   Gap
     assert train_idx[-1] < test_idx[0], "Data Leakage! Train index overlaps Test index."
     assert test_idx[0] - train_idx[-1] - 1 == 5, "Gap size is incorrect."
 
@@ -30,7 +30,7 @@ def test_walk_forward_sliding_window():
     wf = WalkForwardCV(min_train_size=50, test_size=20, gap=5, step_size=20, max_train_size=30)
     folds = wf.split(n_samples=200)
     
-    train_idx, _ = folds[1] # ดู Fold ที่ 2
+    train_idx, _ = folds[1] #  Fold  2
     assert len(train_idx) == 30, "Sliding window failed to limit train size."
 
 def test_create_multi_horizon_sequences(dummy_data):
@@ -39,7 +39,7 @@ def test_create_multi_horizon_sequences(dummy_data):
     seq_length = 15
     X_seq, y_seq = create_multi_horizon_sequences(X, y, seq_length)
     
-    # เช็คมิติข้อมูล
+    # 
     assert X_seq.ndim == 3, "X_seq must be 3D (Samples, Seq_Len, Features)"
     assert X_seq.shape[1] == seq_length, "Sequence length mismatch"
     assert X_seq.shape[2] == 10, "Feature dimension mismatch"

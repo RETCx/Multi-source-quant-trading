@@ -3,14 +3,14 @@ from sklearn.metrics import classification_report, accuracy_score, confusion_mat
 
 def evaluate_and_report(y_true, y_pred, target_name="Target"):
     """
-    พิมพ์ Classification Report สวยๆ และคืนค่า Accuracy
+     Classification Report   Accuracy
     """
     acc = accuracy_score(y_true, y_pred)
     print(f"\n{'='*50}")
     print(f"[EVAL] Horizon: {target_name} (OOS Accuracy: {acc*100:.2f}%)")
     print(f"{'='*50}")
     
-    # ใช้ zero_division=0 เพื่อไม่ให้มันเตือนแดงๆ เวลาทายถูกหน้าเดียว
+    # Use zero_division=0 to suppress warnings when predicting only one class
     report = classification_report(
         y_true, y_pred, 
         target_names=['Down/Flat (0)', 'Up (1)'], 
@@ -22,10 +22,10 @@ def evaluate_and_report(y_true, y_pred, target_name="Target"):
 
 def create_model_comparison_df(results_dict):
     """
-    แปลง Dictionary ผลลัพธ์ให้กลายเป็น Pandas DataFrame สำหรับเซฟลง CSV
+     Dictionary  Pandas DataFrame  CSV
     
     Args:
-        results_dict: dict ที่มี key เป็นชื่อ Target และ value เป็น dict ของ metrics
+        results_dict: dict  key  Target  value  dict  metrics
     """
     comparison_data = []
     

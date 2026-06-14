@@ -22,11 +22,11 @@ def run_walk_forward_pipeline(
     verbose: bool = True
 ) -> dict:
     """
-    ฟังก์ชันกลางสำหรับลูป Walk-Forward Analysis (WFA)
-    คืนค่าเป็น Dictionary ที่ประกอบด้วย:
+     Walk-Forward Analysis (WFA)
+     Dictionary :
     - ensembled_oos
-    - raw_results (เก็บ indices, probas, trues, fold_ids ไว้เผื่อเซฟลง Pickle)
-    - train_accs_mean (ค่าเฉลี่ย Train Accuracy ของแต่ละเป้าหมาย)
+    - raw_results ( indices, probas, trues, fold_ids  Pickle)
+    - train_accs_mean ( Train Accuracy )
     """
     cv_splitter = WalkForwardCV(**cv_config)
     folds = cv_splitter.summary(len(X_raw))

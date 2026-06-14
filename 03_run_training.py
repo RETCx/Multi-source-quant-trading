@@ -106,7 +106,7 @@ print("="*50)
 results_summary = {}
 
 for head_idx, target_name in enumerate(TARGET_COLS):
-    # evaluate_and_report ต้องการ f_trues, f_preds, target_name
+    # evaluate_and_report requires f_trues, f_preds, target_name
     f_trues = ensembled_oos[target_name]['trues']
     f_preds = ensembled_oos[target_name]['preds']
     f_probas = ensembled_oos[target_name]['probas']
@@ -143,14 +143,14 @@ exp.save_pickle(oos_data, "oos_results.pkl")
 # --- SAVE OOS PREDICTIONS TO CSV FOR MANUAL INSPECTION ---
 print("\n[INFO] Saving OOS Predictions to CSV...")
 oos_records = []
-# หา indices ทั้งหมดที่เป็นไปได้ใน oos (union ของทุก target)
+# Find all possible OOS indices (union of all targets)
 all_oos_indices = set()
 for t_name in TARGET_COLS:
     if t_name in ensembled_oos:
         all_oos_indices.update(ensembled_oos[t_name]['indices'])
 all_oos_indices = sorted(all_oos_indices)
 
-# สร้าง DataFrame จากวันที่ที่มีการพยากรณ์ OOS
+# Create DataFrame from OOS prediction dates
 oos_dates = df.index[all_oos_indices]
 df_oos_csv = pd.DataFrame(index=oos_dates)
 df_oos_csv.index.name = 'Date'
@@ -158,11 +158,11 @@ df_oos_csv.index.name = 'Date'
 for t_name in TARGET_COLS:
     if t_name in ensembled_oos:
         oos = ensembled_oos[t_name]
-        # หา row indices ของ target นี้
+        # Find row indices for this target
         t_indices = oos['indices']
         t_dates = df.index[t_indices]
         
-        # สร้าง series เพื่อ map ค่าเข้า df_oos_csv ให้ตรงวัน
+        # Create series to map values to df_oos_csv correctly by date
         pred_series = pd.Series(oos['preds'], index=t_dates)
         prob_series = pd.Series(oos['probas'], index=t_dates)
         true_series = pd.Series(oos['trues'], index=t_dates)
@@ -171,7 +171,7 @@ for t_name in TARGET_COLS:
         df_oos_csv[f"{t_name}_Prob"] = prob_series.round(4)
         df_oos_csv[f"{t_name}_True"] = true_series
 
-# เรียงวันที่และเซฟ
+# Sort dates and save
 df_oos_csv = df_oos_csv.sort_index()
 exp.save_dataframe(df_oos_csv, "oos_predictions.csv")
 

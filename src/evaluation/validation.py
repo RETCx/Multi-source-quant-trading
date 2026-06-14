@@ -1,7 +1,7 @@
 """
 Trading Performance Validation Metrics
 =======================================
-ฟังก์ชันสำหรับประเมินผล Strategy อย่างครอบคลุม
+Functions for comprehensive Strategy evaluation
 (Migrated from VALIDATION_TOOLS_FOR_RESEARCH.ipynb)
 """
 import numpy as np
@@ -14,17 +14,17 @@ def calculate_trading_metrics(
     risk_free_rate: float = 0.02
 ) -> dict:
     """
-    คำนวณ Metrics ครบถ้วนสำหรับ Trading Strategy
+    Calculate complete Metrics for Trading Strategy
     
     Parameters
     ----------
-    equity_curve : Series  รายวัน
-    trade_log    : DataFrame  ที่มีคอลัมน์ return_pct (optional)
-    risk_free_rate : float  อัตราดอกเบี้ยปราศจากความเสี่ยงต่อปี (default 2%)
+    equity_curve : Series  Daily
+    trade_log    : DataFrame  with return_pct column (optional)
+    risk_free_rate : float  Annual risk-free rate (default 2%)
     
     Returns
     -------
-    dict ของ Metrics ทั้งหมด
+    dict of all Metrics
     """
     returns = equity_curve.pct_change().fillna(0)
     total_return = (equity_curve.iloc[-1] / equity_curve.iloc[0]) - 1
@@ -109,7 +109,7 @@ def calculate_trading_metrics(
 
 
 def print_trading_metrics(metrics: dict, title: str = "Strategy Performance"):
-    """แสดงผล Metrics แบบสวยงามใน Terminal"""
+    """Display Metrics elegantly in Terminal"""
     print(f"\n{'='*60}")
     print(f"[REPORT] {title}")
     print(f"{'='*60}")
@@ -150,8 +150,8 @@ def print_trading_metrics(metrics: dict, title: str = "Strategy Performance"):
 
 def save_backtest_artifacts(bt_result: dict, metrics: dict, model_dir: str, prefix: str, ticker: str, title: str = None) -> str:
     """
-    เซฟผลลัพธ์จาก Backtest (CSV, Metrics, Plot) ลงโฟลเดอร์เดียว
-    และคืนค่า Path ของโฟลเดอร์ที่เซฟ
+    Save Backtest results (CSV, Metrics, Plot) to single folder
+    and return the saved folder Path
     """
     import matplotlib.pyplot as plt
     from src.evaluation.tracker import ExperimentManager

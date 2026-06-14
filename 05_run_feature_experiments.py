@@ -3,10 +3,10 @@
 ==============================
 Automated Feature Ablation Lab
 
-Script นี้จะรัน WFA Training + Backtest แบบอัตโนมัติ 
-โดยทดสอบ Feature Exclusion หลายๆ แบบ แล้วเปรียบเทียบผลกันว่าแบบไหนให้ Sharpe ดีที่สุด
+This script runs WFA Training + Backtest automatically 
+Tests various Feature Exclusions and compares them to find the best Sharpe ratio
 
-วิธีใช้:
+Usage:
     python 05_run_feature_experiments.py
 
 Output:
@@ -52,9 +52,9 @@ BT_CFG       = base_config.get('backtest', {})
 # ==========================================
 # 1. DEFINE FEATURE EXPERIMENTS
 # ==========================================
-# แต่ละ experiment คือ dict ที่มี:
-#   'name'     : ชื่อสำหรับ Scoreboard
-#   'exclude'  : รายการ columns ที่เพิ่มนอกจาก base exclusion
+# Each experiment is a dict containing:
+#   'name'     : Name for Scoreboard
+#   'exclude'  : List of columns added beyond base exclusion
 
 BASE_EXCLUDE = base_config.get('exclude_columns', [])
 
@@ -95,9 +95,9 @@ EXPERIMENTS = [
 print(f"Loading feature data for {STOCK_SYMBOL}...")
 df_full = pd.read_csv(DATA_PATH, index_col='date', parse_dates=True)
 df_full = df_full.dropna(subset=TARGET_COLS)
-df_prices_bt = df_full.copy()  # ใช้ไฟล์นี้สำหรับ backtest ด้วย (มี adjOpen, adjClose ฯลฯ)
+df_prices_bt = df_full.copy()  # Use this file for backtest as well (contains adjOpen, adjClose, etc.)
 
-# Filter date range (ถ้ามีกำหนดใน config) สำหรับ Backtest
+# Filter date range (if specified in config) for Backtest
 bt_start_date = BT_CFG.get('start_date', None)
 bt_end_date = BT_CFG.get('end_date', None)
 
@@ -139,7 +139,7 @@ for exp_i, experiment in enumerate(EXPERIMENTS):
     print(f"EXPERIMENT {exp_i+1}/{len(EXPERIMENTS)}: {exp_name}")
     print(f"{'#'*60}")
 
-    # กรอง features ตามการทดลองนี้
+    # Filter features for this experiment
     features = [c for c in df_full.columns if c not in TARGET_COLS and c not in exclude_set]
     X_raw = df_full[features].values
     y_raw = df_full[TARGET_COLS].values

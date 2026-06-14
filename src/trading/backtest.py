@@ -1,13 +1,13 @@
 """
 Dynamic Horizon Backtest Engine
 ================================
-ระบบ Backtest ที่ปรับระยะเวลาถือครองแบบ Dynamic ตามความมั่นใจสูงสุดของโมเดล
+ Backtest  Dynamic 
 
 Logic:
-  - วันที่ T: ดูความมั่นใจ (probability) ของทุก Horizon (1D, 3D, 5D, 10D)
-  - หา Horizon ที่โมเดลมั่นใจสูงสุด
-  - ถ้าค่านั้นสูงกว่า Threshold -> เปิด Trade และตั้ง Time Exit ตาม Horizon นั้น
-  - ATR Stop Loss คอยป้องกันตลอด
+  - Day T: Check confidence (probability) of all Horizons (1D, 3D, 5D, 10D)
+  - Find Horizon with highest confidence
+  - If value > Threshold -> Open Trade and set Time Exit by Horizon
+  - ATR Stop Loss providing continuous protection
 """
 import numpy as np
 import pandas as pd
@@ -27,44 +27,44 @@ def run_dynamic_backtest(
     """
     Dynamic Horizon Backtest Engine
     
-    เปรียบเทียบ probability ของทุก horizon แล้วเลือก horizon ที่มั่นใจที่สุด
-    เพื่อกำหนด Time Exit แบบ dynamic
+     probability  horizon  horizon 
+     Time Exit  dynamic
     
     Parameters
     ----------
     df_prices : DataFrame
-        DataFrame ที่มีคอลัมน์ adjOpen, adjHigh, adjLow, adjClose และ ATR
-        Index เป็น DatetimeIndex
+        DataFrame Contains adjOpen, adjHigh, adjLow, adjClose, and ATR columns
+        Index  DatetimeIndex
     ensembled_oos : dict
-        dict จาก oos_results.pkl['ensembled'] ที่มีคีย์เป็น target_name
-        แต่ละคีย์มี: {'indices': [...], 'preds': [...], 'probas': [...], 'trues': [...]}
+        dict  oos_results.pkl['ensembled']  target_name
+        : {'indices': [...], 'preds': [...], 'probas': [...], 'trues': [...]}
     target_horizons : list
-        รายการจำนวนวัน เช่น [1, 3, 5, 10] ต้องตรงกับจำนวน Target ใน ensembled_oos
+          [1, 3, 5, 10]  Target  ensembled_oos
     initial_capital : float
-        เงินลงทุนเริ่มต้น
+        
     transaction_cost : float
-        ค่า commission แต่ละ leg (entry + exit = x2)
+         commission  leg (entry + exit = x2)
     prob_threshold_pct : int
-        Percentile ที่ใช้ตั้ง Adaptive Threshold (เช่น 85 = ต้องมั่นใจกว่า 85% ของวันที่ผ่านมา)
+        Percentile  Adaptive Threshold ( 85 =  85% )
     sl_multiplier : float
-        ATR Multiplier สำหรับตั้ง Stop Loss
+        ATR Multiplier  Stop Loss
     atr_col : str
-        ชื่อคอลัมน์ ATR ใน df_prices
+        ATR column name in df_prices
         
     Returns
     -------
-    dict ที่มี:
-        - 'equity_curve': Series ของมูลค่าพอร์ตรายวัน
-        - 'trade_log': DataFrame ของ Trade ทุกรายการ
-        - 'final_value': มูลค่าพอร์ตสุดท้าย
-        - 'total_return': ผลตอบแทนรวม (decimal)
+    dict :
+        - 'equity_curve': Series Daily
+        - 'trade_log': DataFrame  Trade 
+        - 'final_value': Final portfolio value
+        - 'total_return': Total return (decimal)
     """
     # ====================================================
     # 1. Build aligned signal arrays per day
     # ====================================================
     target_names = [f"Target_{h}D" for h in target_horizons]
 
-    # สร้าง mapping: date -> row index ใน df_prices (ที่อาจถูก filter แล้ว)
+    #  mapping: date -> row index  df_prices ( filter )
     valid_dates = set(df_prices.index)
     date_to_filtered_row = {date: i for i, date in enumerate(df_prices.index)}
 
@@ -73,8 +73,8 @@ def run_dynamic_backtest(
     signal_dir  = np.zeros(n_rows, dtype=int)
     signal_h    = np.zeros(n_rows, dtype=int)
 
-    # ต้องรู้ date ของแต่ละ OOS index — ดึงจาก df_prices_full ที่ส่งผ่าน full_index_for_mapping
-    # หรือ fallback: อ่าน indices ตรงๆ ถ้า df_prices ไม่ได้ถูก filter (len เท่ากัน)
+    #  date  OOS index —  df_prices_full  full_index_for_mapping
+    #  fallback:  indices   df_prices  filter (len )
     full_index = full_index_for_mapping if full_index_for_mapping is not None else ensembled_oos.get('_full_index', None)
 
     for t_name, h in zip(target_names, target_horizons):
@@ -90,7 +90,7 @@ def run_dynamic_backtest(
             pred = int(oos_preds[i])
             direction = 1 if pred == 1 else -1
 
-            # ถ้ามี full_index -> แปลง oos_row_number -> date -> filtered_row
+            #  full_index ->  oos_row_number -> date -> filtered_row
             if full_index is not None:
                 if data_idx >= len(full_index):
                     continue
@@ -99,7 +99,7 @@ def run_dynamic_backtest(
                     continue
                 row = date_to_filtered_row[oos_date]
             else:
-                # ไม่มี full_index: ใช้ data_idx ตรงๆ (ใช้ได้เฉพาะกรณีไม่ filter)
+                #  full_index:  data_idx  ( filter)
                 if data_idx >= n_rows:
                     continue
                 row = data_idx
@@ -115,7 +115,7 @@ def run_dynamic_backtest(
     if atr_col in df_prices.columns:
         atr_series = df_prices[atr_col].values
     else:
-        # คำนวณ ATR14 เอง
+        #  ATR14 
         print(f"[INFO] Column '{atr_col}' not found. Computing ATR14 on the fly.")
         high = df_prices['adjHigh']
         low  = df_prices['adjLow']
@@ -140,7 +140,7 @@ def run_dynamic_backtest(
     daily_equity  = []
     trade_details = []
     
-    # เก็บ probability ประวัติสำหรับ Adaptive Threshold
+    #  probability  Adaptive Threshold
     past_probs = []
     
     opens  = df_prices['adjOpen'].values
@@ -154,18 +154,18 @@ def run_dynamic_backtest(
         today_low   = lows[i]
         today_close = closes[i]
         
-        # ---- Entry Logic (สัญญาณจากเมื่อวาน) ----
+        # ---- Entry Logic () ----
         if not in_position and i > 0:
             yesterday_prob  = signal_prob[i - 1]
             yesterday_dir   = signal_dir[i - 1]
             yesterday_h     = signal_h[i - 1]
             
-            # อัปเดต Adaptive Threshold จากข้อมูลที่ผ่านมา
+            #  Adaptive Threshold 
             valid_past = [p for p in past_probs if p > 1e-6]
             if len(valid_past) >= 50:
                 thresh = np.percentile(valid_past, prob_threshold_pct)
             else:
-                thresh = 0.55  # default ถ้ายังไม่มีข้อมูลพอ
+                thresh = 0.55  # default if insufficient data
             
             if yesterday_prob >= thresh and yesterday_dir != 0 and yesterday_h > 0:
                 in_position      = True
@@ -174,7 +174,7 @@ def run_dynamic_backtest(
                 trade_side       = "Long" if yesterday_dir == 1 else "Short"
                 hold_days_target = yesterday_h
                 
-                # ATR Stop Loss จาก ATR ของเมื่อวาน
+                # ATR Stop Loss  ATR 
                 atr_val = atr_series[i - 1]
                 if not np.isnan(atr_val):
                     if trade_side == "Long":
@@ -184,7 +184,7 @@ def run_dynamic_backtest(
                 else:
                     sl_price = entry_price * (0.95 if trade_side == "Long" else 1.05)
         
-        # บันทึก probability วันนี้สำหรับ threshold ของวันหน้า
+        #  probability  threshold 
         if signal_prob[i] > 0:
             past_probs.append(signal_prob[i])
         
@@ -205,7 +205,7 @@ def run_dynamic_backtest(
                 force_exit  = True
                 exit_reason = f"Stop Loss @ {sl_price:.2f}"
             
-            # B. Time Exit (ถือครบ h วัน)
+            # B. Time Exit ( h )
             if not force_exit and (days_held >= hold_days_target - 1 or i == n_rows - 1):
                 exit_price  = today_close
                 force_exit  = True
@@ -237,7 +237,7 @@ def run_dynamic_backtest(
                 })
                 in_position = False
         
-        # Mark-to-Market รายวัน
+        # Mark-to-Market Daily
         if in_position:
             if trade_side == "Long":
                 unrealized = (today_close / entry_price) - 1

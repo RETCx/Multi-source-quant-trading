@@ -30,7 +30,7 @@ class StockSentimentAnalyzer:
 
     def process_sentiment_features(self, ticker, df_stock, df_news):
         """
-        work process:  df_stock ( Returns) และ df_news
+        work process:  df_stock ( Returns)  df_news
         """
         # 1. Clean News Data
         # BigQuery saves the date as 'seendate', so we parse it into 'date'

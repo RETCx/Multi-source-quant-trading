@@ -1,18 +1,18 @@
 """
 04_run_backtest.py
 ==================
-Script สำหรับรัน Dynamic Horizon Backtest Engine
+Script for running Dynamic Horizon Backtest Engine
 
-วิธีใช้:
+Usage:
     python 04_run_backtest.py
 
 Input:
-    - data/features/{TICKER}_with_indicators.csv  (ราคา + ATR)
-    - data/models/train_{TICKER}_*/oos_results.pkl  (ผลทำนาย OOS)
+    - data/features/{TICKER}_with_indicators.csv  ( + ATR)
+    - data/models/train_{TICKER}_*/oos_results.pkl  ( OOS)
     - config.yaml
 
 Output:
-    - บันทึกไว้ใน ExperimentManager run directory เดิม (หรือสร้างใหม่)
+    - Saved to original or new ExperimentManager run directory
     - backtest_summary.csv
     - trade_log.csv
     - equity_curve.png
@@ -25,7 +25,7 @@ import yaml
 import numpy as np
 import pandas as pd
 import matplotlib
-matplotlib.use('Agg')   # ไม่ต้องการ Display, เซฟเป็นไฟล์แทน
+matplotlib.use('Agg')   # No Display needed, save to file instead
 import matplotlib.pyplot as plt
 
 from src.trading.backtest import run_dynamic_backtest
@@ -50,54 +50,54 @@ TRANSACTION_COST   = BT_CONFIG.get('transaction_cost', 0.001)
 PROB_THRESHOLD_PCT = BT_CONFIG.get('prob_threshold', 85)
 SL_MULTIPLIER      = BT_CONFIG.get('sl_multiplier', 2.0)
 ATR_COLUMN         = BT_CONFIG.get('atr_column', 'ATR14')
-BT_START_DATE      = BT_CONFIG.get('start_date', None)   # None = ใช้ข้อมูลทั้งหมด
+BT_START_DATE      = BT_CONFIG.get('start_date', None)   # None = 
 BT_END_DATE        = BT_CONFIG.get('end_date', None)
 
 # ==========================================
 # 1. LOAD LATEST OOS PICKLE
 # ==========================================
-# หา run ล่าสุดใน data/models/
+# Find latest run in data/models/
 pattern = os.path.join(MODEL_DIR, f"train_{STOCK_SYMBOL}_*", "oos_results.pkl")
 pkl_files = sorted(glob.glob(pattern))
 
 if not pkl_files:
-    print(f"[ERROR] ไม่พบไฟล์ oos_results.pkl สำหรับ {STOCK_SYMBOL}")
-    print(f"         กรุณารัน python 03_run_training.py ก่อนครับ")
+    print(f"[ERROR] Could not find oos_results.pkl for {STOCK_SYMBOL}")
+    print(f"         Please run python 03_run_training.py first.")
     sys.exit(1)
 
 latest_pkl = pkl_files[-1]
 latest_run_dir = os.path.dirname(latest_pkl)
-print(f"[OK] โหลด OOS Predictions จาก: {latest_pkl}")
+print(f"[OK] Loading OOS Predictions from: {latest_pkl}")
 
 with open(latest_pkl, 'rb') as f:
     oos_data = pickle.load(f)
 
 ensembled_oos = oos_data.get('ensembled', {})
 if not ensembled_oos:
-    print("[ERROR] ไม่พบข้อมูล 'ensembled' ใน pickle")
-    print("         กรุณารัน 03_run_training.py ใหม่ด้วยโค้ดเวอร์ชั่นล่าสุดครับ")
+    print("[ERROR] Ensembled data not found in pickle")
+    print("         Please run 03_run_training.py with latest code version.")
     sys.exit(1)
 
-print(f"[OK] Horizons ที่มี: {list(ensembled_oos.keys())}")
+print(f"[OK] Available Horizons: {list(ensembled_oos.keys())}")
 
 # ==========================================
 # 2. LOAD PRICE DATA (for Backtest)
 # ==========================================
-print(f"\n[INFO] โหลดข้อมูลราคาจาก: {DATA_PATH}")
+print(f"\n[INFO] Load price data from: {DATA_PATH}")
 df_prices = pd.read_csv(DATA_PATH, index_col='date', parse_dates=True)
 print(f"       Total rows: {len(df_prices)} | Columns: {len(df_prices.columns)}")
 
 required_cols = ['adjOpen', 'adjHigh', 'adjLow', 'adjClose']
 missing = [c for c in required_cols if c not in df_prices.columns]
 if missing:
-    print(f"[ERROR] ขาดคอลัมน์: {missing}")
+    print(f"[ERROR] Missing columns: {missing}")
     sys.exit(1)
 
-# ต้องทำ dropna(subset=TARGET_COLS) ให้เหมือน 03_run_training เพื่อให้ row numbers (OOS indices) ตรงกันเป๊ะ
+# Must dropna(subset=TARGET_COLS) to match 03_run_training for index alignment
 df_prices = df_prices.dropna(subset=TARGET_COLS)
-full_index_for_mapping = df_prices.index.copy()  # เก็บ index เต็มๆ ไว้แมปกับ oos_indices
+full_index_for_mapping = df_prices.index.copy()  # Keep full index to map with oos_indices
 
-# Filter date range (ถ้ามีกำหนดใน config) สำหรับ Backtest
+# Filter date range (if specified in config) for Backtest
 if BT_START_DATE or BT_END_DATE:
     date_mask = pd.Series(True, index=df_prices.index)
     if BT_START_DATE:
@@ -135,7 +135,7 @@ result = run_dynamic_backtest(
 )
 
 if result is None:
-    print("[ERROR] Backtest ล้มเหลว ไม่มีสัญญาณเลย")
+    print("[ERROR] Backtest  ")
     sys.exit(1)
 
 # ==========================================
