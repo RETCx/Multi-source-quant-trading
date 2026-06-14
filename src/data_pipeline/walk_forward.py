@@ -60,13 +60,13 @@ class WalkForwardCV:
         print(f"   Min train size: {self.min_train_size}")
         print(f"   Test size per fold: {self.test_size}")
         print(f"   Gap (embargo): {self.gap}")
-        print(f"   {'─'*65}")
+        print(f"   {'-'*65}")
         
         for i, (tr, te) in enumerate(folds):
             print(f"   Fold {i+1:2d}: Train [{tr[0]:4d}:{tr[-1]:4d}] ({len(tr):4d} rows) "
-                  f"→ Gap {self.gap}d → Test [{te[0]:4d}:{te[-1]:4d}] ({len(te):3d} rows)")
+                  f"-> Gap {self.gap}d -> Test [{te[0]:4d}:{te[-1]:4d}] ({len(te):3d} rows)")
         
-        print(f"   {'─'*65}")
+        print(f"   {'-'*65}")
         if folds:
             all_test_idx = np.concatenate([te for _, te in folds])
             unique_oos = len(np.unique(all_test_idx))

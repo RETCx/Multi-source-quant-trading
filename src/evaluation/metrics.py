@@ -7,7 +7,7 @@ def evaluate_and_report(y_true, y_pred, target_name="Target"):
     """
     acc = accuracy_score(y_true, y_pred)
     print(f"\n{'='*50}")
-    print(f"🎯 Horizon: {target_name} (OOS Accuracy: {acc*100:.2f}%)")
+    print(f"[EVAL] Horizon: {target_name} (OOS Accuracy: {acc*100:.2f}%)")
     print(f"{'='*50}")
     
     # ใช้ zero_division=0 เพื่อไม่ให้มันเตือนแดงๆ เวลาทายถูกหน้าเดียว
@@ -40,7 +40,7 @@ def create_model_comparison_df(results_dict):
         
     df = pd.DataFrame(comparison_data)
     
-    print(f"\n📊 Summary Report")
+    print(f"\n[REPORT] Summary Report")
     print("-" * 65)
     print(df.to_string(index=False))
     print("-" * 65)
