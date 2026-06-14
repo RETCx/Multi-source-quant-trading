@@ -2,6 +2,7 @@
 # Trading Pipeline Configuration
 # ==========================================
 
+# --- Data Settings ---
 data_settings:
   lookback_years: 9          
   selected_tickers:
@@ -15,7 +16,6 @@ sources:
   use_tiingo_spy: true
   use_yfinance_vix: true
   use_bigquery_news: true
-  # Set to true for local testing, false for server automation
   require_bq_confirmation: true
 
 data_path:
@@ -26,5 +26,58 @@ data_path:
   features: "data/features"
   models: "data/models"
 
+# --- Reproducibility ---
+random_seed: 42
+
+# --- Target Columns (Multi-Horizon Labels) ---
+target_columns:
+  - Target_1D
+  - Target_3D
+  - Target_5D
+  - Target_10D
+  - Target_20D
+
+target_horizons: [1, 3, 5, 10, 20]
+target_rolling_window: 252    # Rolling Percentile window (~1 year of trading days)
+
+# --- Feature Exclusion List ---
+# Columns to exclude from model features
+# (price columns needed for backtest, noisy/redundant indicators)
+exclude_columns:
+  # Raw price columns (needed for backtest but NOT for model input)
+  - adjOpen
+  - adjHigh
+  - adjLow
+  - adjClose
+  - adjVolume
+
+# --- Multi-Head LSTM Parameters ---
+model_params:
+  sequence_length: 15         # Lookback window (15 trading days)
+  hidden_size: 64             # LSTM hidden units
+  num_layers: 2               # Number of stacked LSTM layers
+  dropout: 0.3                # Dropout rate for regularization
+  epochs: 100                 # Maximum training epochs
+  patience: 25                # Early stopping patience (epochs without improvement)
+  batch_size: 64             # Training batch size
+  learning_rate: 0.001        # Adam optimizer learning rate
+
+# --- Walk-Forward CV Configuration ---
+walk_forward:
+  min_train_size: 500         # Minimum training window (~2 years of trading days)
+  test_size: 60               # OOS test window per fold (~3 months)
+  gap: 20                     # Embargo gap to prevent data leakage (~1 month)
+  step_size: 40               # Slide step (overlap = test_size - step_size = 20 days)
+  max_train_size: null         # null = Expanding Window, integer = Sliding Window
+
+# --- Backtest Configuration ---
+backtest:
+  initial_capital: 100000
+  transaction_cost: 0.001     # 0.1% per trade (entry + exit)
+  prob_threshold: 85          # Percentile for adaptive probability threshold
+  sl_multiplier: 2.0          # ATR multiplier for Stop Loss
+  atr_column: ATR14           # Column name for ATR in the feature CSV
+
+# --- Trading Setup ---
 trading_setup:
   mode: paper

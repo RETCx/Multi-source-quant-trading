@@ -1,4 +1,6 @@
 import os
+import random
+import numpy as np
 from datetime import datetime
 
 def needs_download(filepath):
@@ -14,3 +16,24 @@ def needs_download(filepath):
         if last_mod_date == today_date:
             return False
     return True
+
+def set_seed(seed=42):
+    """
+    Locks down all random number generators for strict reproducibility.
+    Must be called before any model creation or training.
+    """
+    import torch
+    
+    # 1. Python & NumPy
+    random.seed(seed)
+    np.random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    
+    # 2. PyTorch
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)  # For multi-GPU
+    
+    # 3. cuDNN Backend (deterministic but slower)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False

@@ -133,9 +133,10 @@ for ticker in tickers:
         # --- Apply Time Features ---
         time.calc_time_features(df)
 
-        # --- 6. สร้าง Target 5 ระยะเวลา (Multi-Horizon Labels) ---
-        # ใช้ window=252 (ข้อมูลประมาณ 1 ปีทำการ) เพื่อหา Rolling Median
-        tgt.create_multi_horizon_targets(df, horizons=[1, 3, 5, 10, 20], window=252)
+        # --- 6. Create Multi-Horizon Targets (from config) ---
+        target_horizons = config.get('target_horizons', [1, 3, 5, 10, 20])
+        target_window = config.get('target_rolling_window', 252)
+        tgt.create_multi_horizon_targets(df, horizons=target_horizons, window=target_window)
         # --- Filter Date Range & Drop Initial Window NaNs ---
         # Moving average of 200 days needs 200 rows of seed data, so we filter after calculation
         # We also want to drop rows that have NaNs due to rolling windows.
