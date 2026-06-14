@@ -167,14 +167,19 @@ def run_dynamic_backtest(
             yesterday_dir   = signal_dir[i - 1]
             yesterday_h     = signal_h[i - 1]
             
-            #  Adaptive Threshold (Rolling Window of last 120 signals)
-            valid_past = [p for p in past_probs if p > 1e-6]
-            if len(valid_past) >= 50:
-                # Use only the last 120 valid signals so threshold can drop when market gets noisy
-                recent_past = valid_past[-120:]
-                thresh = np.percentile(recent_past, prob_threshold_pct)
+            #  Threshold Logic (Fixed vs Adaptive)
+            if prob_threshold_pct <= 1.0:
+                # Fixed Threshold Mode (e.g., 0.80)
+                thresh = prob_threshold_pct
             else:
-                thresh = 0.55  # default if insufficient data
+                # Adaptive Percentile Mode (e.g., 70, 85)
+                valid_past = [p for p in past_probs if p > 1e-6]
+                if len(valid_past) >= 50:
+                    # Use only the last 120 valid signals so threshold can drop when market gets noisy
+                    recent_past = valid_past[-120:]
+                    thresh = np.percentile(recent_past, prob_threshold_pct)
+                else:
+                    thresh = 0.55  # default if insufficient data
                 
             if in_position:
                 action = "Skipped (Already in position)"
