@@ -167,10 +167,12 @@ def run_dynamic_backtest(
             yesterday_dir   = signal_dir[i - 1]
             yesterday_h     = signal_h[i - 1]
             
-            #  Adaptive Threshold 
+            #  Adaptive Threshold (Rolling Window of last 120 signals)
             valid_past = [p for p in past_probs if p > 1e-6]
             if len(valid_past) >= 50:
-                thresh = np.percentile(valid_past, prob_threshold_pct)
+                # Use only the last 120 valid signals so threshold can drop when market gets noisy
+                recent_past = valid_past[-120:]
+                thresh = np.percentile(recent_past, prob_threshold_pct)
             else:
                 thresh = 0.55  # default if insufficient data
                 
