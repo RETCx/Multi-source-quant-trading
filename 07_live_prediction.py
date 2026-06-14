@@ -6,15 +6,11 @@ import torch
 import numpy as np
 import pandas as pd
 import subprocess
-import requests
-from dotenv import load_dotenv
 from sklearn.preprocessing import RobustScaler
 
 from src.models.architecture import MultiHorizonLSTM
 from src.models.trainer import MultiHeadTrainer
 from src.utils import set_seed
-
-load_dotenv()
 
 def load_config():
     with open('config.yaml', 'r') as f:
@@ -27,25 +23,6 @@ def run_script(script_name):
         print(f"[ERROR] {script_name} failed. Cannot proceed with Live Prediction.")
         sys.exit(result.returncode)
     print(f"[SYSTEM] {script_name} completed successfully.")
-
-def send_line_notify(message):
-    token = os.getenv("LINE_NOTIFY_TOKEN")
-    if not token:
-        print("[WARNING] LINE_NOTIFY_TOKEN not found in .env. Skipping LINE notification.")
-        return
-        
-    url = "https://notify-api.line.me/api/notify"
-    headers = {"Authorization": f"Bearer {token}"}
-    data = {"message": message}
-    
-    try:
-        response = requests.post(url, headers=headers, data=data)
-        if response.status_code == 200:
-            print("[SYSTEM] Successfully sent LINE Notification!")
-        else:
-            print(f"[ERROR] Failed to send LINE Notify: {response.status_code} - {response.text}")
-    except Exception as e:
-        print(f"[ERROR] Exception during LINE Notify: {e}")
 
 def get_best_features(stock, default_features):
     path = f"data/models/best_features_{stock}.json"
@@ -60,16 +37,10 @@ def main():
     print("QUANTITATIVE TRADING - LIVE DEPLOYMENT")
     print("="*60)
     
-    # Check for --fast flag
-    fast_mode = "--fast" in sys.argv
-    
-    if fast_mode:
-        print("\n[1] FAST MODE ENABLED: Skipping Data Synchronization...")
-    else:
-        print("\n[1] Synchronizing Live Market Data (Running Pipeline...)")
-        print("    (Tip: Run with 'python 07_live_prediction.py --fast' to skip this step)")
-        run_script("01_fetch_data.py")
-        run_script("02_build_features.py")
+    print("\n[1] Synchronizing Live Market Data (Running Pipeline...)")
+    # Execute the data fetching and feature engineering pipeline to get today's data
+    # run_script("01_fetch_data.py")
+    # run_script("02_build_features.py")
     
     config = load_config()
     stock = config['data_settings']['selected_tickers'][0]
@@ -189,27 +160,18 @@ def main():
     print(f"  -> Max Confidence: {best_prob:.2%} (Target Horizon: {best_horizon} Days)")
     print(f"  -> Execution Threshold: {thresh_val:.2%}")
     
-    notify_msg = f"\n🤖 Quant Bot ({stock})\n"
-    notify_msg += f"Confidence: {best_prob:.2%} (Horizon: {best_horizon}D)\n"
-    
     if best_prob >= thresh_val:
         if best_dir == 1:
             print("\n✅ ACTION: [BUY/LONG]")
             print(f"   Enter at Open tomorrow. Target hold {best_horizon} days. Stop-Loss: 2x ATR.")
-            notify_msg += f"🔥 ACTION: BUY / LONG\nTarget: {best_horizon} Days"
         else:
             print("\n❌ ACTION: [SELL/SHORT]")
             print(f"   Enter Short at Open tomorrow. Target hold {best_horizon} days. Stop-Loss: 2x ATR.")
-            notify_msg += f"🔻 ACTION: SELL / SHORT\nTarget: {best_horizon} Days"
     else:
         print("\n⚪ ACTION: [STAY IN CASH]")
         print("   Confidence is too low. Strategic inactivity advised.")
-        notify_msg += f"⚪ ACTION: STAY IN CASH\n(Confidence below threshold)"
         
     print("="*60)
-    
-    # Send Notification
-    send_line_notify(notify_msg)
 
 if __name__ == "__main__":
     main()

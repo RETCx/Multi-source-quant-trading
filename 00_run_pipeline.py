@@ -15,7 +15,7 @@ def run_script(script_name):
     elapsed = time.time() - start_time
     
     if result.returncode != 0:
-        print(f"\n❌ ERROR: {script_name} failed with exit code {result.returncode}")
+        print(f"\nERROR: {script_name} failed with exit code {result.returncode}")
         print("Pipeline stopped.")
         sys.exit(result.returncode)
         

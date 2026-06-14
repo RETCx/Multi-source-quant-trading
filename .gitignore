@@ -4,6 +4,8 @@ data
 __pycache__
 WFA_MODEL_TIME_FEATURES Overlapping Windows.ipynb
 VALIDATION_TOOLS_FOR_RESEARCH.ipynb
+model_compare.ipynb
+importance.ipynb
 model_summary_*.csv
 Architecture.md
 model_summary_GOOGL.csv 

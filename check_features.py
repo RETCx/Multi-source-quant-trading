@@ -58,12 +58,12 @@ for target in targets:
     indices = np.argsort(importances)[::-1]
     
     print(f"\n[TARGET]: {target}")
-    print("  --- Top 10 Most Important ---")
-    for i in range(10):
+    print("  --- Top 20 Most Important ---")
+    for i in range(20):
         print(f"  {i+1:2d}. {feature_cols[indices[i]]:20s} ({importances[indices[i]]:.4f})")
         
-    print("  --- Bottom 10 LEAST Important (Candidates for Removal) ---")
-    for i in range(1, 11):
+    print("  --- Bottom 20 LEAST Important (Candidates for Removal) ---")
+    for i in range(1, 21):
         idx = indices[-i]
         print(f"  -{i:2d}. {feature_cols[idx]:20s} ({importances[idx]:.4f})")
 

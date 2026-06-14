@@ -141,7 +141,6 @@ for ticker in tickers:
         # Moving average of 200 days needs 200 rows of seed data, so we filter after calculation
         # We also want to drop rows that have NaNs due to rolling windows.
         # But we might have NaNs from Market or Fundamentals if they don't cover the full range.
-        # df = df[df.index > '2017-10-01'] 
         feature_cols = [c for c in df.columns if not c.startswith('Target_')]
         df.dropna(subset=feature_cols, inplace=True)
         
