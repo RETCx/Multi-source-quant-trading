@@ -26,6 +26,8 @@ def run_rf_proxy_wfa(X, y, df_prices, features, target_cols, cv_config, bt_confi
     feature_importances = np.zeros(len(features))
     fold_count = 0
     
+    total_folds = len(range(0, n_samples - min_train - test_size - gap + 1, step_size))
+    
     for start_idx in range(0, n_samples - min_train - test_size - gap + 1, step_size):
         train_end = start_idx + min_train
         test_start = train_end + gap
@@ -58,6 +60,9 @@ def run_rf_proxy_wfa(X, y, df_prices, features, target_cols, cv_config, bt_confi
             feature_importances += clf.feature_importances_
             
         fold_count += 1
+        if fold_count % 5 == 0 or fold_count == total_folds:
+            logging.info(f"   ... Processing WFA Fold {fold_count}/{total_folds}")
+            
         if test_end == n_samples:
             break
             
@@ -140,7 +145,7 @@ def main():
     # Find Best
     best_run = max(history, key=lambda x: x['sharpe'])
     logging.info("\n" + "="*50)
-    logging.info("🎯 OPTIMAL FEATURE SET FOUND!")
+    logging.info("OPTIMAL FEATURE SET FOUND!")
     logging.info(f"Optimal Size: {best_run['num_features']} features")
     logging.info(f"Max Sharpe Ratio: {best_run['sharpe']:.3f}")
     logging.info("="*50)
