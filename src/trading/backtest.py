@@ -173,6 +173,8 @@ def run_dynamic_backtest(
                 entry_price      = today_open
                 trade_side       = "Long" if yesterday_dir == 1 else "Short"
                 hold_days_target = yesterday_h
+                entry_prob       = yesterday_prob
+                entry_thresh     = thresh
                 
                 # ATR Stop Loss  ATR 
                 atr_val = atr_series[i - 1]
@@ -225,6 +227,8 @@ def run_dynamic_backtest(
                     'entry_date':  df_prices.index[entry_idx],
                     'exit_date':   df_prices.index[i],
                     'side':        trade_side,
+                    'confidence':  entry_prob,
+                    'threshold':   entry_thresh,
                     'entry_price': entry_price,
                     'exit_price':  exit_price,
                     'sl_price':    sl_price,
