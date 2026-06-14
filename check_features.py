@@ -58,8 +58,14 @@ for target in targets:
     indices = np.argsort(importances)[::-1]
     
     print(f"\n[TARGET]: {target}")
-    for i in range(20):
+    print("  --- Top 10 Most Important ---")
+    for i in range(10):
         print(f"  {i+1:2d}. {feature_cols[indices[i]]:20s} ({importances[indices[i]]:.4f})")
+        
+    print("  --- Bottom 10 LEAST Important (Candidates for Removal) ---")
+    for i in range(1, 11):
+        idx = indices[-i]
+        print(f"  -{i:2d}. {feature_cols[idx]:20s} ({importances[idx]:.4f})")
 
 # --- C. High Correlation Check (Multicollinearity) ---
 print("\n--- 3. Highly Correlated Feature Pairs (R > 0.95) ---")
