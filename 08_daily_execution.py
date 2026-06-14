@@ -46,7 +46,7 @@ load_dotenv(os.path.join(SCRIPT_DIR, ".env"))
 
 
 def run_step(script_name: str, step_label: str) -> bool:
-    """Run a python script as a subprocess. Returns True if successful."""
+    """Run a python script and stream its output in real-time."""
     logger.info(f"{'='*50}")
     logger.info(f"STEP: {step_label}")
     logger.info(f"Running: {script_name}")
@@ -54,29 +54,30 @@ def run_step(script_name: str, step_label: str) -> bool:
     
     start = time.time()
     
-    result = subprocess.run(
+    # ใช้ Popen เพื่อให้ดึง output มาโชว์แบบ Real-time ได้
+    process = subprocess.Popen(
         [sys.executable, os.path.join(SCRIPT_DIR, script_name)],
         cwd=SCRIPT_DIR,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,  # รวบ Error มาโชว์ในช่องทางเดียวกัน
         text=True,
         encoding='utf-8',
         errors='replace'
     )
     
+    # อ่านบรรทัดต่อบรรทัดแบบ Real-time
+    for line in iter(process.stdout.readline, ''):
+        line = line.strip()
+        if line:
+            logger.info(f"  | {line}")
+            
+    process.stdout.close()
+    returncode = process.wait()
+    
     elapsed = time.time() - start
     
-    # Log stdout
-    if result.stdout:
-        for line in result.stdout.strip().split('\n'):
-            logger.info(f"  | {line}")
-    
-    # Log stderr (warnings, etc.)
-    if result.stderr:
-        for line in result.stderr.strip().split('\n'):
-            logger.warning(f"  ! {line}")
-    
-    if result.returncode != 0:
-        logger.error(f"FAILED: {script_name} (exit code {result.returncode}, took {elapsed:.1f}s)")
+    if returncode != 0:
+        logger.error(f"FAILED: {script_name} (exit code {returncode}, took {elapsed:.1f}s)")
         return False
     
     logger.info(f"OK: {script_name} ({elapsed:.1f}s)")
