@@ -170,15 +170,15 @@ def main():
     if best_prob >= thresh_val:
         if best_dir == 1:
             action = "BUY"
-            print("\n✅ ACTION: [BUY/LONG]")
+            print("\n[+] ACTION: [BUY/LONG]")
             print(f"   Enter at Open tomorrow. Target hold {best_horizon} days. Stop-Loss: 2x ATR.")
         else:
             action = "SELL"
-            print("\n❌ ACTION: [SELL/SHORT]")
+            print("\n[-] ACTION: [SELL/SHORT]")
             print(f"   Enter Short at Open tomorrow. Target hold {best_horizon} days. Stop-Loss: 2x ATR.")
     else:
         action = "HOLD"
-        print("\n⚪ ACTION: [STAY IN CASH]")
+        print("\n[ ] ACTION: [STAY IN CASH]")
         print("   Confidence is too low. Strategic inactivity advised.")
         
     print("="*60)
