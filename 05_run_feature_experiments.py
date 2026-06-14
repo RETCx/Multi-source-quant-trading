@@ -175,6 +175,7 @@ for exp_i, experiment in enumerate(EXPERIMENTS):
         ensembled_oos      = ensembled_oos,
         target_horizons    = HORIZONS,
         initial_capital    = BT_CFG.get('initial_capital', 100_000),
+        position_size      = BT_CFG.get('position_size', 1.0),
         transaction_cost   = BT_CFG.get('transaction_cost', 0.001),
         prob_threshold_pct = BT_CFG.get('prob_threshold', 85),
         sl_multiplier      = BT_CFG.get('sl_multiplier', 2.0),

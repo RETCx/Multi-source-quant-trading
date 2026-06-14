@@ -46,6 +46,7 @@ MODEL_DIR       = config['data_path']['models']
 
 BT_CONFIG = config.get('backtest', {})
 INITIAL_CAPITAL    = BT_CONFIG.get('initial_capital', 100_000)
+POSITION_SIZE      = BT_CONFIG.get('position_size', 1.0)
 TRANSACTION_COST   = BT_CONFIG.get('transaction_cost', 0.001)
 PROB_THRESHOLD_PCT = BT_CONFIG.get('prob_threshold', 85)
 SL_MULTIPLIER      = BT_CONFIG.get('sl_multiplier', 2.0)
@@ -127,6 +128,7 @@ result = run_dynamic_backtest(
     ensembled_oos       = ensembled_oos,
     target_horizons     = TARGET_HORIZONS,
     initial_capital     = INITIAL_CAPITAL,
+    position_size       = POSITION_SIZE,
     transaction_cost    = TRANSACTION_COST,
     prob_threshold_pct  = PROB_THRESHOLD_PCT,
     sl_multiplier       = SL_MULTIPLIER,

@@ -18,6 +18,7 @@ def run_dynamic_backtest(
     ensembled_oos: dict,
     target_horizons: list,
     initial_capital: float = 100_000,
+    position_size: float = 1.0,
     transaction_cost: float = 0.001,
     prob_threshold_pct: int = 85,
     sl_multiplier: float = 2.0,
@@ -136,6 +137,7 @@ def run_dynamic_backtest(
     sl_price      = 0.0
     trade_side    = ""
     hold_days_target = 0
+    invested_amount = 0.0
     
     daily_equity  = []
     trade_details = []
@@ -167,19 +169,14 @@ def run_dynamic_backtest(
             yesterday_dir   = signal_dir[i - 1]
             yesterday_h     = signal_h[i - 1]
             
-            #  Threshold Logic (Fixed vs Adaptive)
-            if prob_threshold_pct <= 1.0:
-                # Fixed Threshold Mode (e.g., 0.80)
-                thresh = prob_threshold_pct
+            #  Adaptive Threshold (Rolling Window of last 120 signals)
+            valid_past = [p for p in past_probs if p > 1e-6]
+            if len(valid_past) >= 50:
+                # Use only the last 120 valid signals so threshold can drop when market gets noisy
+                recent_past = valid_past[-120:]
+                thresh = np.percentile(recent_past, prob_threshold_pct)
             else:
-                # Adaptive Percentile Mode (e.g., 70, 85)
-                valid_past = [p for p in past_probs if p > 1e-6]
-                if len(valid_past) >= 50:
-                    # Use only the last 120 valid signals so threshold can drop when market gets noisy
-                    recent_past = valid_past[-120:]
-                    thresh = np.percentile(recent_past, prob_threshold_pct)
-                else:
-                    thresh = 0.55  # default if insufficient data
+                thresh = 0.55  # default if insufficient data
                 
             if in_position:
                 action = "Skipped (Already in position)"
@@ -193,6 +190,7 @@ def run_dynamic_backtest(
                     hold_days_target = yesterday_h
                     entry_prob       = yesterday_prob
                     entry_thresh     = thresh
+                    invested_amount  = balance * position_size
                     
                     # ATR Stop Loss  ATR 
                     atr_val = atr_series[i - 1]
@@ -254,7 +252,7 @@ def run_dynamic_backtest(
                     ret_pct = (entry_price / exit_price) - 1
                 
                 net_ret  = ret_pct - (transaction_cost * 2)
-                pnl      = balance * net_ret
+                pnl      = invested_amount * net_ret
                 balance += pnl
                 
                 trade_details.append({
@@ -281,7 +279,7 @@ def run_dynamic_backtest(
                 unrealized = (today_close / entry_price) - 1
             else:
                 unrealized = (entry_price / today_close) - 1
-            daily_equity.append(balance * (1 + unrealized))
+            daily_equity.append(balance + (invested_amount * unrealized))
         else:
             daily_equity.append(balance)
     
