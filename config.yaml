@@ -35,9 +35,8 @@ target_columns:
   - Target_3D
   - Target_5D
   - Target_10D
-  - Target_20D
 
-target_horizons: [1, 3, 5, 10, 20]
+target_horizons: [1, 3, 5, 10]
 target_rolling_window: 252    # Rolling Percentile window (~1 year of trading days)
 
 # --- Feature Exclusion List ---
@@ -50,6 +49,15 @@ exclude_columns:
   - adjLow
   - adjClose
   - adjVolume
+  - open
+  - high
+  - low
+  - close
+  - volume
+  - SMA10
+  - SMA20
+  - EMA10
+  - EMA20
 
 # --- Multi-Head LSTM Parameters ---
 model_params:
@@ -77,6 +85,8 @@ backtest:
   prob_threshold: 85          # Percentile for adaptive probability threshold
   sl_multiplier: 2.0          # ATR multiplier for Stop Loss
   atr_column: ATR14           # Column name for ATR in the feature CSV
+  start_date: "2025-01-01"    # Backtest start date (null = use all data)
+  end_date:   "2026-01-31"    # Backtest end date   (null = use all data)
 
 # --- Trading Setup ---
 trading_setup:
