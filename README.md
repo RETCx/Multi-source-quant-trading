@@ -4,7 +4,7 @@ An end-to-end automated quantitative trading pipeline that fetches market data, 
 
 ---
 
-## 🌟 Key Features & Methodologies
+## Key Features & Methodologies
 
 Throughout the development of this project, we implemented several advanced techniques to ensure robustness, prevent data leakage, and automate the pipeline for real-world deployment:
 
@@ -23,7 +23,7 @@ Throughout the development of this project, we implemented several advanced tech
 * **Slippage & Transaction Costs:** Strictly accounts for simulated real-world frictions (e.g., 0.1% Tx Cost, 0.05% Slippage per leg) to ensure backtest metrics reflect achievable results.
 * **Volatility-Adjusted Stop Loss:** Dynamically calculates Stop Loss levels using Average True Range (ATR) multipliers.
 
-### 4. Enterprise-Grade Automation
+### 4. Automation
 * **Unified Notification System:** Supports both **LINE Notify** and **Gmail API (OAuth2)**. Emails are formatted dynamically using HTML and Base64 encoding. Includes a `--no-notify` flag for silent test runs.
 * **Hardware Detection:** Automatically checks and switches to PyTorch CUDA processing if an NVIDIA GPU is available, falling back to CPU gracefully.
 * **Path Locking:** Explicitly locks the Current Working Directory (`CWD`) in python scripts to ensure it works flawlessly when triggered by Windows Task Scheduler from `C:\Windows\System32`.
@@ -96,11 +96,11 @@ pause
 
 ---
 
-## 🧪 Running Tests
+## Running Tests
 If you only want to test the live prediction pipeline without triggering actual emails or LINE messages:
 ```bash
 python 07_live_prediction.py --no-notify
 ```
 
 --
-**Happy Trading! 📈**
+**Happy Trading! **

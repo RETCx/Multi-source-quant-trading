@@ -5,6 +5,7 @@ credentials.json
 token.json
 data
 __pycache__
+.pytest_cache
 WFA_MODEL_TIME_FEATURES Overlapping Windows.ipynb
 VALIDATION_TOOLS_FOR_RESEARCH.ipynb
 model_compare.ipynb
