@@ -200,23 +200,6 @@ def main():
     except Exception as e:
         print(f"[NOTIFY] Notification skipped: {e}")
 
-    # ==========================================
-    # 7. SEND EMAIL NOTIFICATION
-    # ==========================================
-    try:
-        from src.notifier import send_email, format_signal_message
-        body = format_signal_message(
-            stock=stock,
-            predictions=prediction_details,
-            action=action,
-            best_horizon=best_horizon,
-            best_confidence=best_prob
-        )
-        subject = f"[{action}] {stock} - Conf {best_prob:.0%} ({best_horizon}D)"
-        send_email(subject=subject, body=body)
-    except Exception as e:
-        print(f"[NOTIFY] Notification skipped: {e}")
-
 if __name__ == "__main__":
     main()
 
