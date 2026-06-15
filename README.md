@@ -31,7 +31,7 @@ SMTP_TO_EMAIL=your_email@gmail.com
 If you use BigQuery for news sentiment, make sure to place your `gcp_key.json` in the root folder. (The `config.yaml` points to it automatically if configured).
 
 ### 4. Create the Execution Script (`run_bot.bat`)
-Since `run_bot.bat` is ignored by Git (to prevent conflicts across different machines), **create a new file named `run_bot.bat` in the root folder** and paste the following code.
+Since `run_bot.bat` is ignored by Git (to prevent conflicts across different machines), **create a new file named `run_bot.bat` in the root folder** and paste the following code. 
 
 **Note:** Change `quant_env` to the actual name of your Conda environment on this machine.
 

@@ -31,7 +31,7 @@ def get_incremental_start_date(keywords_dict, default_start_date, raw_dir):
         actual_start_date = min(latest_dates)
         print(f"Incremental Update Triggered: Adjusting start_date from {default_start_date} to {actual_start_date}")
         return actual_start_date
-
+        
     return default_start_date
 
 def build_gdelt_query(keywords_dict, start_date, end_date):
@@ -74,7 +74,7 @@ def perform_dry_run(client, query, require_confirmation):
                 return False
         else:
             print("Confirmation disabled via config. Proceeding automatically...")
-
+        
         return True
     except Exception as e:
         print(f"Dry run failed: {e}")
@@ -87,15 +87,15 @@ def process_query_in_chunks(client, query, keywords_dict):
     """
     print("\nStep 3: Executing query and processing in chunks (Low-RAM Mode)...")
     query_job = client.query(query)
-
+    
     # Use to_dataframe_iterable to download in chunks (avoids OOM)
     chunk_iterator = query_job.result().to_dataframe_iterable()
-
+    
     # Store filtered results per ticker in memory
     filtered_dfs = {ticker: [] for ticker in keywords_dict.keys()}
     total_rows_processed = 0
     chunk_count = 0
-
+    
     for df_chunk in chunk_iterator:
         chunk_count += 1
         if df_chunk.empty:
@@ -103,13 +103,13 @@ def process_query_in_chunks(client, query, keywords_dict):
             
         total_rows_processed += len(df_chunk)
         print(f"  -> Processing chunk {chunk_count} (Rows: {len(df_chunk)})...")
-
+        
         # Parse sentiment scores for the chunk
         df_chunk['sentiment_score'] = df_chunk['tone_data'].astype(str).apply(
             lambda x: float(x.split(',')[0]) if pd.notnull(x) and ',' in x else None
         )
         df_chunk = df_chunk.drop_duplicates(subset=['url'], keep='first')
-
+        
         # Filter and collect to individual ticker lists
         for ticker, keyword in keywords_dict.items():
             sub_df = df_chunk[df_chunk['organizations'].str.lower().str.contains(keyword, na=False, regex=True)].copy()
@@ -127,9 +127,9 @@ def save_filtered_data(filtered_dfs, keywords_dict, raw_dir):
             final_df = pd.concat(filtered_dfs[ticker])
             final_df = final_df.sort_values('seendate', ascending=True)
             final_df = final_df.drop_duplicates(subset=['url'], keep='last')
-
+            
             filename = f"{raw_dir}/{ticker}_news_raw.csv"
-
+            
             if os.path.exists(filename):
                 df_old = pd.read_csv(filename)
                 df_combined = pd.concat([df_old, final_df])
