@@ -108,6 +108,24 @@ def calculate_trading_metrics(
     }
 
 
+def print_backtest_config(stock_symbol: str, config_dict: dict):
+    """Display Backtest Configuration elegantly in Terminal"""
+    print(f"\n{'='*55}")
+    print(f"DYNAMIC HORIZON BACKTEST | {stock_symbol}")
+    print(f"{'='*55}")
+    print(f"  Capital     : ${config_dict.get('initial_capital', 100000):,.0f}")
+    print(f"  Tx Cost     : {config_dict.get('transaction_cost', 0.001)*100:.2f}% per leg")
+    print(f"  Slippage    : {config_dict.get('slippage', 0.0005)*100:.2f}% per leg")
+    print(f"  ATR SL Mult : {config_dict.get('sl_multiplier', 2.0)}x")
+    print(f"  Prob Thresh : {config_dict.get('prob_threshold_pct', 85)}th percentile")
+    print(f"  Horizons    : {config_dict.get('target_horizons', [])} days")
+    start = config_dict.get('start_date', None)
+    end = config_dict.get('end_date', None)
+    if start or end:
+        print(f"  Date Range  : {start or 'start'} -> {end or 'end'}")
+    print(f"{'='*55}\n")
+
+
 def print_trading_metrics(metrics: dict, title: str = "Strategy Performance"):
     """Display Metrics elegantly in Terminal"""
     print(f"\n{'='*60}")

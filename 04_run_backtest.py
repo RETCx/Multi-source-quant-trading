@@ -29,7 +29,7 @@ matplotlib.use('Agg')   # No Display needed, save to file instead
 import matplotlib.pyplot as plt
 
 from src.trading.backtest import run_dynamic_backtest
-from src.evaluation.validation import calculate_trading_metrics, print_trading_metrics
+from src.evaluation.validation import calculate_trading_metrics, print_trading_metrics, print_backtest_config
 from src.evaluation.tracker import ExperimentManager
 
 # ==========================================
@@ -112,18 +112,17 @@ if BT_START_DATE or BT_END_DATE:
 # ==========================================
 # 3. RUN DYNAMIC HORIZON BACKTEST
 # ==========================================
-print(f"\n{'='*55}")
-print(f"DYNAMIC HORIZON BACKTEST | {STOCK_SYMBOL}")
-print(f"{'='*55}")
-print(f"  Capital     : ${INITIAL_CAPITAL:,.0f}")
-print(f"  Tx Cost     : {TRANSACTION_COST*100:.2f}% per leg")
-print(f"  Slippage    : {SLIPPAGE*100:.2f}% per leg")
-print(f"  ATR SL Mult : {SL_MULTIPLIER}x")
-print(f"  Prob Thresh : {PROB_THRESHOLD_PCT}th percentile")
-print(f"  Horizons    : {TARGET_HORIZONS} days")
-if BT_START_DATE or BT_END_DATE:
-    print(f"  Date Range  : {BT_START_DATE or 'start'} -> {BT_END_DATE or 'end'}")
-print(f"{'='*55}\n")
+config_dict = {
+    'initial_capital': INITIAL_CAPITAL,
+    'transaction_cost': TRANSACTION_COST,
+    'slippage': SLIPPAGE,
+    'sl_multiplier': SL_MULTIPLIER,
+    'prob_threshold_pct': PROB_THRESHOLD_PCT,
+    'target_horizons': TARGET_HORIZONS,
+    'start_date': BT_START_DATE,
+    'end_date': BT_END_DATE
+}
+print_backtest_config(STOCK_SYMBOL, config_dict)
 
 result = run_dynamic_backtest(
     df_prices           = df_prices,
