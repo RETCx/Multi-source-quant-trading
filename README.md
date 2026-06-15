@@ -55,8 +55,12 @@ SMTP_TO_EMAIL=your_email@gmail.com
 ```
 
 ### 3. Setup API Keys for Google Cloud
-* **BigQuery:** Place your `gcp_key.json` in the root folder.
-* **Gmail API:** Place your `credentials.json` (OAuth Desktop App) in the root folder. The first time you run the notifier, it will prompt you to log in via browser and generate a `token.json`.
+To use Google services (BigQuery for news, Gmail for notifications), you must place specific credential files in the root folder:
+* **BigQuery (`gcp_key.json`):** Service Account key with BigQuery access.
+* **Gmail API (`credentials.json` & `token.json`):** 
+  1. Download the OAuth Desktop App Client ID as `credentials.json` from Google Cloud Console and place it in the root folder.
+  2. The first time you run the notifier, a browser window will pop up asking you to log in to your Google Account.
+  3. Once authorized, the system will automatically create `token.json` to keep you logged in for future daily runs.
 
 ### 4. Create the Execution Script (`run_bot.bat`)
 Since `run_bot.bat` is ignored by Git, **create a new file named `run_bot.bat` in the root folder** and paste the following code. (Change `quant_env` to your actual Conda environment name).
