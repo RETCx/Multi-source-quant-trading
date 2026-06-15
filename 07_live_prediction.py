@@ -110,20 +110,13 @@ def main():
     
     # Train
     # We do a fast train on all data (No Validation Split since we just want to overfit to recent regime)
-    optimizer = torch.optim.Adam(model.parameters(), lr=config['model_params']['learning_rate'])
-    criterion = torch.nn.BCELoss()
-    epochs = 100 
-    model.train()
-    for ep in range(epochs):
-        for batch_x, batch_y in train_loader:
-            batch_x, batch_y = batch_x.to(device), batch_y.to(device)
-            optimizer.zero_grad()
-            outputs = model(batch_x)
-            loss = 0
-            for h_i in range(len(target_cols)):
-                loss += criterion(outputs[h_i], batch_y[:, h_i].unsqueeze(1))
-            loss.backward()
-            optimizer.step()
+    trainer = MultiHeadTrainer(
+        model=model,
+        learning_rate=config['model_params']['learning_rate'],
+        epochs=100,
+        device=device
+    )
+    model = trainer.fast_train(train_loader)
             
     print("[5] Model Training Complete. Running Live Inference...")
     

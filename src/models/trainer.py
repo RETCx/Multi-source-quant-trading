@@ -102,3 +102,22 @@ class MultiHeadTrainer:
                     fold_trues[i].extend(trues)
                     
         return fold_preds, fold_probas, fold_trues, train_accs, best_epoch_idx, stopped_epoch
+
+    def fast_train(self, train_loader):
+        """Train quickly on the entire dataset without validation/early-stopping (for Live inference)"""
+        self.model.train()
+        for epoch in range(self.epochs):
+            for xb, yb in train_loader:
+                xb, yb = xb.to(self.device), yb.to(self.device)
+                self.optimizer.zero_grad()
+                
+                outs = self.model(xb)
+                
+                loss = 0
+                for i in range(self.n_heads):
+                    loss += self.criterion(outs[i].squeeze(), yb[:, i])
+                    
+                loss.backward()
+                self.optimizer.step()
+        
+        return self.model
