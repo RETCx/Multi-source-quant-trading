@@ -1,10 +1,36 @@
 # Multi-Source Quant Trading Bot
 
-An end-to-end automated quantitative trading pipeline that fetches market data, generates multi-horizon predictions using a PyTorch LSTM Walk-Forward model, and sends daily trading signals via Email.
+An end-to-end automated quantitative trading pipeline that fetches market data, generates multi-horizon predictions using a PyTorch LSTM Walk-Forward model, and sends daily trading signals via Email and LINE.
 
 ---
 
-## Deployment Guide (Server Setup)
+## 🌟 Key Features & Methodologies
+
+Throughout the development of this project, we implemented several advanced techniques to ensure robustness, prevent data leakage, and automate the pipeline for real-world deployment:
+
+### 1. Multi-Source Data Architecture
+* **Alpha Vantage (Fundamentals):** Fetches up to 20 years of quarterly income statements and balance sheets to entirely eliminate the look-ahead bias that occurs when using backward filling (`bfill`) on short-history sources like Yahoo Finance.
+* **Google BigQuery (GDELT News):** Extracts global news sentiment using a memory-optimized **Low-RAM Chunk Processing** method (`to_dataframe_iterable()`), allowing massive queries without crashing the system.
+* **Tiingo & YFinance:** Reliable API integrations for daily OHLCV, SPY, and VIX data.
+
+### 2. PyTorch Multi-Horizon LSTM
+* **Multi-Head Architecture:** A single deep learning model that simultaneously predicts multiple holding periods (`1D`, `3D`, `5D`, `7D`, `10D`) sharing the same hidden state representation.
+* **Walk-Forward Cross Validation:** Emulates realistic trading by incrementally expanding/sliding the training window forward in time, preventing future data leakage into the training set.
+* **Fast-Training for Live Inference:** The `07_live_prediction.py` script automatically retrains the model on the latest data (without validation splits) using `MultiHeadTrainer.fast_train()` to capture the most recent market regime before predicting tomorrow's signal.
+
+### 3. Realistic Backtesting Engine
+* **Dynamic Horizons:** Executes trades based on the highest confidence horizon output by the model.
+* **Slippage & Transaction Costs:** Strictly accounts for simulated real-world frictions (e.g., 0.1% Tx Cost, 0.05% Slippage per leg) to ensure backtest metrics reflect achievable results.
+* **Volatility-Adjusted Stop Loss:** Dynamically calculates Stop Loss levels using Average True Range (ATR) multipliers.
+
+### 4. Enterprise-Grade Automation
+* **Unified Notification System:** Supports both **LINE Notify** and **Gmail API (OAuth2)**. Emails are formatted dynamically using HTML and Base64 encoding. Includes a `--no-notify` flag for silent test runs.
+* **Hardware Detection:** Automatically checks and switches to PyTorch CUDA processing if an NVIDIA GPU is available, falling back to CPU gracefully.
+* **Path Locking:** Explicitly locks the Current Working Directory (`CWD`) in python scripts to ensure it works flawlessly when triggered by Windows Task Scheduler from `C:\Windows\System32`.
+
+---
+
+## 🛠️ Deployment Guide (Server Setup)
 
 Since this project uses `.gitignore` to protect sensitive keys and environment-specific configurations, you need to manually set up a few files when cloning to a new server.
 
@@ -20,20 +46,20 @@ pip install -r requirements.txt
 Create a `.env` file in the root directory and add your API keys:
 ```env
 tiingo_api_key=YOUR_TIINGO_KEY_HERE
+ALPHAVANTAGE_API_KEY=YOUR_ALPHAVANTAGE_KEY_HERE
+LINE_NOTIFY_TOKEN=YOUR_LINE_TOKEN_HERE
 
-# Email Notification Settings (Use Google App Password, NO SPACES)
+# Email Notification Settings (Used as fallback or sender identifier)
 SMTP_EMAIL=your_email@gmail.com
-SMTP_PASSWORD=your_16_char_app_password
 SMTP_TO_EMAIL=your_email@gmail.com
 ```
 
-### 3. Setup GCP Service Account
-If you use BigQuery for news sentiment, make sure to place your `gcp_key.json` in the root folder. (The `config.yaml` points to it automatically if configured).
+### 3. Setup API Keys for Google Cloud
+* **BigQuery:** Place your `gcp_key.json` in the root folder.
+* **Gmail API:** Place your `credentials.json` (OAuth Desktop App) in the root folder. The first time you run the notifier, it will prompt you to log in via browser and generate a `token.json`.
 
 ### 4. Create the Execution Script (`run_bot.bat`)
-Since `run_bot.bat` is ignored by Git (to prevent conflicts across different machines), **create a new file named `run_bot.bat` in the root folder** and paste the following code. 
-
-**Note:** Change `quant_env` to the actual name of your Conda environment on this machine.
+Since `run_bot.bat` is ignored by Git, **create a new file named `run_bot.bat` in the root folder** and paste the following code. (Change `quant_env` to your actual Conda environment name).
 
 ```bat
 @echo off
@@ -44,13 +70,10 @@ REM ============================================================
 REM Set working directory to where this .bat file lives
 cd /d "%~dp0"
 
-REM ============================================================
 REM Activate Conda Environment
-REM ============================================================
-REM เปลี่ยนชื่อ 'quant_env' เป็นชื่อ Conda Env ของคุณ (เช่น base หรือชื่ออื่น)
 call conda activate quant_env
 IF %ERRORLEVEL% NEQ 0 (
-    echo [BOT] Warning: Could not activate Conda environment. Trying to run with default python...
+    echo [BOT] Warning: Could not activate Conda environment.
 ) ELSE (
     echo [BOT] Conda environment activated successfully.
 )
@@ -71,5 +94,13 @@ pause
 5. Browse and select the `run_bot.bat` you just created.
 6. (Optional) In task properties, check "Run whether user is logged on or not" and "Hidden" to run it in the background silently.
 
+---
+
+## 🧪 Running Tests
+If you only want to test the live prediction pipeline without triggering actual emails or LINE messages:
+```bash
+python 07_live_prediction.py --no-notify
+```
+
 --
-**Happy Trading! **
+**Happy Trading! 📈**
