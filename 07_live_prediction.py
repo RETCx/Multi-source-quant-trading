@@ -38,6 +38,9 @@ def get_best_features(stock, default_features):
     return default_features
 
 def main():
+    config = load_config()
+    set_seed(config['random_seed'])
+    
     parser = argparse.ArgumentParser(description="Run Live Prediction")
     parser.add_argument('--no-notify', action='store_true', help="Skip sending email/LINE notifications (for testing)")
     args = parser.parse_args()
@@ -103,7 +106,6 @@ def main():
     
     # Initialize Model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    set_seed(config['random_seed'])
     
     model = MultiHorizonLSTM(
         input_size=len(features),
