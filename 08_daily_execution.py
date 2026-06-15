@@ -108,6 +108,17 @@ def main():
     logger.info(f"  CWD:  {os.getcwd()}")
     logger.info("=" * 60)
     
+    # --- HARDWARE CHECK ---
+    try:
+        import torch
+        if torch.cuda.is_available():
+            logger.info(f"  [HARDWARE] CUDA: TRUE | GPU: {torch.cuda.get_device_name(0)}")
+        else:
+            logger.warning("  [HARDWARE] CUDA: FALSE | GPU not found. Falling back to CPU!")
+    except ImportError:
+        logger.warning("  [HARDWARE] PyTorch not installed. Skipping CUDA check.")
+    logger.info("=" * 60)
+    
     # Define the daily pipeline steps
     steps = [
         ("01_fetch_data.py",       "1/4 Fetch latest market data"),
