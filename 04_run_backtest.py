@@ -48,6 +48,7 @@ BT_CONFIG = config.get('backtest', {})
 INITIAL_CAPITAL    = BT_CONFIG.get('initial_capital', 100_000)
 POSITION_SIZE      = BT_CONFIG.get('position_size', 1.0)
 TRANSACTION_COST   = BT_CONFIG.get('transaction_cost', 0.001)
+SLIPPAGE           = BT_CONFIG.get('slippage', 0.0005)
 PROB_THRESHOLD_PCT = BT_CONFIG.get('prob_threshold', 85)
 SL_MULTIPLIER      = BT_CONFIG.get('sl_multiplier', 2.0)
 ATR_COLUMN         = BT_CONFIG.get('atr_column', 'ATR14')
@@ -116,6 +117,7 @@ print(f"DYNAMIC HORIZON BACKTEST | {STOCK_SYMBOL}")
 print(f"{'='*55}")
 print(f"  Capital     : ${INITIAL_CAPITAL:,.0f}")
 print(f"  Tx Cost     : {TRANSACTION_COST*100:.2f}% per leg")
+print(f"  Slippage    : {SLIPPAGE*100:.2f}% per leg")
 print(f"  ATR SL Mult : {SL_MULTIPLIER}x")
 print(f"  Prob Thresh : {PROB_THRESHOLD_PCT}th percentile")
 print(f"  Horizons    : {TARGET_HORIZONS} days")
@@ -130,6 +132,7 @@ result = run_dynamic_backtest(
     initial_capital     = INITIAL_CAPITAL,
     position_size       = POSITION_SIZE,
     transaction_cost    = TRANSACTION_COST,
+    slippage            = SLIPPAGE,
     prob_threshold_pct  = PROB_THRESHOLD_PCT,
     sl_multiplier       = SL_MULTIPLIER,
     atr_col             = ATR_COLUMN,

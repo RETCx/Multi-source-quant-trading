@@ -20,6 +20,7 @@ def run_dynamic_backtest(
     initial_capital: float = 100_000,
     position_size: float = 1.0,
     transaction_cost: float = 0.001,
+    slippage: float = 0.0005,
     prob_threshold_pct: int = 85,
     sl_multiplier: float = 2.0,
     atr_col: str = 'ATR14',
@@ -246,10 +247,15 @@ def run_dynamic_backtest(
                 exit_reason = f"Time Exit (h={hold_days_target}d)"
             
             if force_exit:
+                # Calculate return with slippage applied to entry and exit
                 if trade_side == "Long":
-                    ret_pct = (exit_price / entry_price) - 1
+                    actual_entry = entry_price * (1 + slippage)
+                    actual_exit  = exit_price * (1 - slippage)
+                    ret_pct = (actual_exit / actual_entry) - 1
                 else:
-                    ret_pct = (entry_price / exit_price) - 1
+                    actual_entry = entry_price * (1 - slippage)
+                    actual_exit  = exit_price * (1 + slippage)
+                    ret_pct = (actual_entry / actual_exit) - 1
                 
                 net_ret  = ret_pct - (transaction_cost * 2)
                 pnl      = invested_amount * net_ret

@@ -116,3 +116,4 @@ backtest:
 # --- Trading Setup ---
 trading_setup:
   mode: paper
+  live_threshold: 0.70        # Absolute probability threshold for live execution (e.g. 0.70 means 70% confidence)

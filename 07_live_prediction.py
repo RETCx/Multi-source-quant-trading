@@ -152,10 +152,10 @@ def main():
             
     print("\n[6] Execution Strategy (Based on config.yaml):")
     bt_config = config['backtest']
-    prob_threshold = bt_config.get('prob_threshold', 85)
+    prob_threshold = config['trading_setup'].get('live_threshold', 0.70)
     
     # Since we are live, we use Fixed Threshold or a generic safe value
-    thresh_val = prob_threshold if prob_threshold <= 1.0 else 0.70 # Default to 70% if percentile config is used
+    thresh_val = float(prob_threshold)
     
     print(f"  -> Max Confidence: {best_prob:.2%} (Target Horizon: {best_horizon} Days)")
     print(f"  -> Execution Threshold: {thresh_val:.2%}")
