@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 import yaml
 import json
 import torch
@@ -37,6 +38,10 @@ def get_best_features(stock, default_features):
     return default_features
 
 def main():
+    parser = argparse.ArgumentParser(description="Run Live Prediction")
+    parser.add_argument('--no-notify', action='store_true', help="Skip sending email/LINE notifications (for testing)")
+    args = parser.parse_args()
+
     print("="*60)
     print("QUANTITATIVE TRADING - LIVE DEPLOYMENT")
     print("="*60)
@@ -179,19 +184,22 @@ def main():
     # ==========================================
     # 7. SEND EMAIL NOTIFICATION
     # ==========================================
-    try:
-        from src.notifier import send_email, format_signal_message
-        body = format_signal_message(
-            stock=stock,
-            predictions=prediction_details,
-            action=action,
-            best_horizon=best_horizon,
-            best_confidence=best_prob
-        )
-        subject = f"[{action}] {stock} - Conf {best_prob:.0%} ({best_horizon}D)"
-        send_email(subject=subject, body=body)
-    except Exception as e:
-        print(f"[NOTIFY] Notification skipped: {e}")
+    if args.no_notify:
+        print("\n[NOTIFY] Notification skipped: '--no-notify' flag was used.")
+    else:
+        try:
+            from src.notifier import send_email, format_signal_message
+            body = format_signal_message(
+                stock=stock,
+                predictions=prediction_details,
+                action=action,
+                best_horizon=best_horizon,
+                best_confidence=best_prob
+            )
+            subject = f"[{action}] {stock} - Conf {best_prob:.0%} ({best_horizon}D)"
+            send_email(subject=subject, body=body)
+        except Exception as e:
+            print(f"[NOTIFY] Notification skipped: {e}")
 
 if __name__ == "__main__":
     main()
