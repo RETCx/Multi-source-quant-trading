@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 
 # Import functions
 from src.data_fetch.tiingo import fetch_spy, fetch_stocks
-from src.data_fetch.yfinance import fetch_vix, fetch_fundamentals
-from src.data_fetch.bigquery import fetch_news  
+from src.data_fetch.yfinance import fetch_vix
+from src.data_fetch.bigquery import fetch_news
 
 # ==========================================
 # 0. Setup & Load Config
@@ -17,6 +17,7 @@ with open('config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 
 api_key = os.getenv("tiingo_api_key")
+av_api_key = os.getenv("ALPHAVANTAGE_API_KEY")
 tickers = config['data_settings']['selected_tickers']
 lookback = config['data_settings']['lookback_years']
 sources = config['sources']
@@ -52,11 +53,14 @@ if sources.get('use_tiingo_spy'):
 if sources.get('use_yfinance_vix'):
     fetch_vix(start_date, end_date, DIR_OHLCV)
 
-# Fetch stock data to OHLCV and FUNDAMENTALS folders
+# Fetch stock data to OHLCV
 if sources.get('use_tiingo_stocks'):
     fetch_stocks(tickers, api_key, start_date, end_date, DIR_OHLCV)
-    # Add fetching fundamentals here
-    fetch_fundamentals(tickers, DIR_FUND)
+
+# Fetch Fundamentals
+if sources.get('use_alphavantage_fundamentals'):
+    from src.data_fetch.alphavantage import fetch_fundamentals
+    fetch_fundamentals(tickers, av_api_key, DIR_FUND)
 
 # Fetch news from BigQuery (GDELT)
 if sources.get('use_bigquery_news'):

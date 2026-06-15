@@ -8,24 +8,28 @@ import pandas as pd
 import subprocess
 from sklearn.preprocessing import RobustScaler
 
+# Fix CWD for Task Scheduler compatibility
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(SCRIPT_DIR)
+
 from src.models.architecture import MultiHorizonLSTM
 from src.models.trainer import MultiHeadTrainer
 from src.utils import set_seed
 
 def load_config():
-    with open('config.yaml', 'r') as f:
+    with open(os.path.join(SCRIPT_DIR, 'config.yaml'), 'r') as f:
         return yaml.safe_load(f)
 
 def run_script(script_name):
     print(f"\n[SYSTEM] Running {script_name}...")
-    result = subprocess.run([sys.executable, script_name])
+    result = subprocess.run([sys.executable, os.path.join(SCRIPT_DIR, script_name)], cwd=SCRIPT_DIR)
     if result.returncode != 0:
         print(f"[ERROR] {script_name} failed. Cannot proceed with Live Prediction.")
         sys.exit(result.returncode)
     print(f"[SYSTEM] {script_name} completed successfully.")
 
 def get_best_features(stock, default_features):
-    path = f"data/models/best_features_{stock}.json"
+    path = os.path.join(SCRIPT_DIR, f"data/models/best_features_{stock}.json")
     if os.path.exists(path):
         with open(path, 'r') as f:
             data = json.load(f)
@@ -44,7 +48,7 @@ def main():
     
     config = load_config()
     stock = config['data_settings']['selected_tickers'][0]
-    data_path = f"{config['data_path']['features']}/{stock}_with_indicators.csv"
+    data_path = os.path.join(SCRIPT_DIR, f"{config['data_path']['features']}/{stock}_with_indicators.csv")
     
     print(f"\n[2] Loading synchronized market data for {stock}...")
     df = pd.read_csv(data_path, index_col='date', parse_dates=True)
@@ -137,13 +141,16 @@ def main():
     best_prob = 0
     best_horizon = 0
     best_dir = 0
+    prediction_details = {}  # For notification
     
     for h_i, tgt in enumerate(target_cols):
         prob = preds[h_i].item()
         direction = 1 if prob >= 0.5 else 0
         confidence = prob if direction == 1 else 1 - prob
+        direction_str = "UP" if direction == 1 else "DOWN"
         
-        print(f"  - {tgt}: Confidence {confidence:.2%} -> {'UP' if direction == 1 else 'DOWN'}")
+        print(f"  - {tgt}: Confidence {confidence:.2%} -> {direction_str}")
+        prediction_details[tgt] = (confidence, direction_str)
         
         if confidence > best_prob:
             best_prob = confidence
@@ -162,16 +169,36 @@ def main():
     
     if best_prob >= thresh_val:
         if best_dir == 1:
-            print("\n✅ ACTION: [BUY/LONG]")
+            action = "BUY"
+            print("\n[+] ACTION: [BUY/LONG]")
             print(f"   Enter at Open tomorrow. Target hold {best_horizon} days. Stop-Loss: 2x ATR.")
         else:
-            print("\n❌ ACTION: [SELL/SHORT]")
+            action = "SELL"
+            print("\n[-] ACTION: [SELL/SHORT]")
             print(f"   Enter Short at Open tomorrow. Target hold {best_horizon} days. Stop-Loss: 2x ATR.")
     else:
-        print("\n⚪ ACTION: [STAY IN CASH]")
+        action = "HOLD"
+        print("\n[ ] ACTION: [STAY IN CASH]")
         print("   Confidence is too low. Strategic inactivity advised.")
         
     print("="*60)
+
+    # ==========================================
+    # 7. SEND EMAIL NOTIFICATION
+    # ==========================================
+    try:
+        from src.notifier import send_email, format_signal_message
+        body = format_signal_message(
+            stock=stock,
+            predictions=prediction_details,
+            action=action,
+            best_horizon=best_horizon,
+            best_confidence=best_prob
+        )
+        subject = f"[{action}] {stock} - Conf {best_prob:.0%} ({best_horizon}D)"
+        send_email(subject=subject, body=body)
+    except Exception as e:
+        print(f"[NOTIFY] Notification skipped: {e}")
 
 if __name__ == "__main__":
     main()

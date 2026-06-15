@@ -1,0 +1,26 @@
+--extra-index-url https://download.pytorch.org/whl/cu118
+
+# Core Data & ML
+pandas
+numpy
+scipy
+scikit-learn
+matplotlib
+
+# Deep Learning (CUDA 11.8)
+torch
+torchvision
+torchaudio
+
+# Cloud & APIs
+google-cloud-bigquery
+google-cloud-bigquery-storage
+pyarrow
+yfinance
+requests
+
+# Utilities
+pyyaml
+python-dotenv
+tqdm
+pytest
