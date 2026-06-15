@@ -101,6 +101,3 @@ If you only want to test the live prediction pipeline without triggering actual 
 ```bash
 python 07_live_prediction.py --no-notify
 ```
-
---
-**Happy Trading! **
