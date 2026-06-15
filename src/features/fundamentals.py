@@ -27,13 +27,7 @@ def merge_and_calc_fundamentals(price_df, fund_df):
     df_merged = pd.merge_asof(price_df, fund_df, left_index=True, right_index=True, direction='backward')
     
     # 2. Forward Fill is handled by merge_asof(direction='backward').
-    # But for dates strictly BEFORE the very first date in fund_df (e.g. 2016-2024), they will be NaN.
-    # To prevent dropping 8 years of OHLCV data, we backward fill the earliest known fundamental data.
-    # (Minor look-ahead bias for those early years, but preserves the dataset size)
-    fund_columns = fund_df.columns
-    for col in fund_columns:
-        if col in df_merged.columns:
-            df_merged[col] = df_merged[col].bfill()
+    # We now use Alpha Vantage which provides 20 years of data, so we don't need bfill.
     
     # 3. calculate EPS (using TTM EPS or calculate from Net Income TTM / Shares)
     if 'EPS_TTM' in df_merged.columns:

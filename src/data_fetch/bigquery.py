@@ -133,6 +133,7 @@ def save_filtered_data(filtered_dfs, keywords_dict, raw_dir):
             if os.path.exists(filename):
                 df_old = pd.read_csv(filename)
                 df_combined = pd.concat([df_old, final_df])
+                df_combined['seendate'] = pd.to_datetime(df_combined['seendate'])
                 df_combined = df_combined.drop_duplicates(subset=['url'], keep='last')
                 df_combined = df_combined.sort_values('seendate', ascending=True)
                 df_combined.to_csv(filename, index=False, encoding='utf-8-sig')

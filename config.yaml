@@ -15,6 +15,7 @@ sources:
   use_tiingo_stocks: true
   use_tiingo_spy: true
   use_yfinance_vix: true
+  use_alphavantage_fundamentals: true
   use_bigquery_news: true
   require_bq_confirmation: false
 

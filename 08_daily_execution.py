@@ -54,12 +54,11 @@ def run_step(script_name: str, step_label: str) -> bool:
     
     start = time.time()
     
-    # ใช้ Popen เพื่อให้ดึง output มาโชว์แบบ Real-time ได้
     process = subprocess.Popen(
-        [sys.executable, os.path.join(SCRIPT_DIR, script_name)],
+        [sys.executable, "-u", os.path.join(SCRIPT_DIR, script_name)],
         cwd=SCRIPT_DIR,
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,  # รวบ Error มาโชว์ในช่องทางเดียวกัน
+        stderr=subprocess.STDOUT,  
         text=True,
         encoding='utf-8',
         errors='replace'
