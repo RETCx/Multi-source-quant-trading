@@ -138,6 +138,32 @@ def main():
     print(f"LIVE PREDICTIONS FOR: TOMORROW")
     print("="*60)
     
+    import glob
+    import pickle
+    
+    # Locate latest oos_results.pkl to compute historical baseline
+    pattern = os.path.join(SCRIPT_DIR, config['data_path']['models'], f"train_{stock}_*", "oos_results.pkl")
+    pkl_files = sorted(glob.glob(pattern))
+    
+    ensembled_oos = {}
+    if pkl_files:
+        latest_pkl = pkl_files[-1]
+        print(f"\n[INFO] Loading OOS baseline from: {latest_pkl}")
+        try:
+            with open(latest_pkl, 'rb') as f:
+                oos_data = pickle.load(f)
+                ensembled_oos = oos_data.get('ensembled', {})
+        except Exception as e:
+            print(f"[WARN] Failed to load OOS baseline: {e}")
+    else:
+        print("[WARN] No OOS baseline found. Will use default baseline stats (mean=0.5, std=0.05).")
+
+    strength_mode = config.get('backtest', {}).get('strength_mode', 'z_score')
+    rolling_win = config.get('target_rolling_window', 252)
+    
+    print(f"\nEvaluating targets using Strength Mode: '{strength_mode}' (rolling window: {rolling_win})")
+    
+    best_strength = -999.0
     best_prob = 0
     best_horizon = 0
     best_dir = 0
@@ -149,10 +175,31 @@ def main():
         confidence = prob if direction == 1 else 1 - prob
         direction_str = "UP" if direction == 1 else "DOWN"
         
-        print(f"  - {tgt}: Confidence {confidence:.2%} -> {direction_str}")
+        # Calculate baseline stats
+        h_mean = 0.5
+        h_std = 0.05
+        if tgt in ensembled_oos:
+            probas = [float(p) for p in ensembled_oos[tgt]['probas'] if float(p) > 1e-6]
+            if probas:
+                recent_probas = probas[-rolling_win:]
+                h_mean = np.mean(recent_probas)
+                h_std = np.std(recent_probas) if len(recent_probas) > 1 else 0.05
+                
+        # Calculate Strength Score
+        if strength_mode == 'z_score':
+            safe_std = h_std if h_std > 1e-6 else 1e-6
+            strength = (prob - h_mean) / safe_std
+            strength_str = f"Z-Score: {strength:+.2f}"
+        else: # 'diff'
+            strength = prob - h_mean
+            strength_str = f"Diff: {strength:+.2%}"
+            
+        print(f"  - {tgt}: Conf {confidence:.2%} -> {direction_str} | Mean: {h_mean:.2%}, {strength_str}")
         prediction_details[tgt] = (confidence, direction_str)
         
-        if confidence > best_prob:
+        abs_strength = abs(strength)
+        if abs_strength > best_strength:
+            best_strength = abs_strength
             best_prob = confidence
             best_horizon = int(tgt.split('_')[1].replace('D',''))
             best_dir = direction

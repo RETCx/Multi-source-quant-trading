@@ -52,6 +52,8 @@ SLIPPAGE           = BT_CONFIG.get('slippage', 0.0005)
 PROB_THRESHOLD_PCT = BT_CONFIG.get('prob_threshold', 85)
 SL_MULTIPLIER      = BT_CONFIG.get('sl_multiplier', 2.0)
 ATR_COLUMN         = BT_CONFIG.get('atr_column', 'ATR14')
+STRENGTH_MODE      = BT_CONFIG.get('strength_mode', 'z_score')
+ROLLING_WINDOW     = config.get('target_rolling_window', 252)
 BT_START_DATE      = BT_CONFIG.get('start_date', None)   # None = 
 BT_END_DATE        = BT_CONFIG.get('end_date', None)
 
@@ -120,7 +122,9 @@ config_dict = {
     'prob_threshold_pct': PROB_THRESHOLD_PCT,
     'target_horizons': TARGET_HORIZONS,
     'start_date': BT_START_DATE,
-    'end_date': BT_END_DATE
+    'end_date': BT_END_DATE,
+    'strength_mode': STRENGTH_MODE,
+    'rolling_window': ROLLING_WINDOW
 }
 print_backtest_config(STOCK_SYMBOL, config_dict)
 
@@ -136,6 +140,8 @@ result = run_dynamic_backtest(
     sl_multiplier       = SL_MULTIPLIER,
     atr_col             = ATR_COLUMN,
     full_index_for_mapping = full_index_for_mapping,
+    rolling_window      = ROLLING_WINDOW,
+    strength_mode       = STRENGTH_MODE,
 )
 
 if result is None:

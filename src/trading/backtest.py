@@ -25,6 +25,8 @@ def run_dynamic_backtest(
     sl_multiplier: float = 2.0,
     atr_col: str = 'ATR14',
     full_index_for_mapping = None,
+    rolling_window: int = 252,
+    strength_mode: str = 'z_score',
 ) -> dict:
     """
     Dynamic Horizon Backtest Engine
@@ -52,6 +54,10 @@ def run_dynamic_backtest(
         ATR Multiplier  Stop Loss
     atr_col : str
         ATR column name in df_prices
+    rolling_window : int
+        Rolling window size for calculating historical probability statistics
+    strength_mode : str
+        'z_score' or 'diff' (absolute difference from average)
         
     Returns
     -------
@@ -71,15 +77,15 @@ def run_dynamic_backtest(
     date_to_filtered_row = {date: i for i, date in enumerate(df_prices.index)}
 
     n_rows = len(df_prices)
-    signal_prob = np.zeros(n_rows)
-    signal_dir  = np.zeros(n_rows, dtype=int)
-    signal_h    = np.zeros(n_rows, dtype=int)
+    n_horizons = len(target_horizons)
+    prob_matrix = np.zeros((n_rows, n_horizons))
+    dir_matrix = np.zeros((n_rows, n_horizons), dtype=int)
 
     #  date  OOS index —  df_prices_full  full_index_for_mapping
     #  fallback:  indices   df_prices  filter (len )
     full_index = full_index_for_mapping if full_index_for_mapping is not None else ensembled_oos.get('_full_index', None)
 
-    for t_name, h in zip(target_names, target_horizons):
+    for h_idx, (t_name, h) in enumerate(zip(target_names, target_horizons)):
         if t_name not in ensembled_oos:
             continue
         oos = ensembled_oos[t_name]
@@ -106,10 +112,52 @@ def run_dynamic_backtest(
                     continue
                 row = data_idx
 
-            if prob > signal_prob[row]:
-                signal_prob[row] = prob
-                signal_dir[row]  = direction
-                signal_h[row]    = h
+            prob_matrix[row, h_idx] = prob
+            dir_matrix[row, h_idx]  = direction
+
+    # Compute rolling stats for each horizon to get baseline
+    df_probs = pd.DataFrame(prob_matrix, columns=target_names)
+    df_probs_valid = df_probs.replace(0.0, np.nan)
+    
+    rolling_mean = df_probs_valid.rolling(window=rolling_window, min_periods=50).mean()
+    rolling_std  = df_probs_valid.rolling(window=rolling_window, min_periods=50).std()
+    
+    expanding_mean = df_probs_valid.expanding(min_periods=5).mean()
+    expanding_std  = df_probs_valid.expanding(min_periods=5).std()
+    
+    final_mean = rolling_mean.fillna(expanding_mean).fillna(df_probs_valid.mean()).fillna(0.5)
+    final_std  = rolling_std.fillna(expanding_std).fillna(df_probs_valid.std()).fillna(0.05)
+
+    # Calculate Strength Score matrix (Absolute Deviation to capture both Long and Short)
+    strength_matrix = np.zeros_like(prob_matrix)
+    for h_idx in range(n_horizons):
+        h_mean = final_mean.iloc[:, h_idx].values
+        h_std  = final_std.iloc[:, h_idx].values
+        h_prob = prob_matrix[:, h_idx]
+        
+        if strength_mode == 'z_score':
+            safe_std = np.where(h_std > 1e-6, h_std, 1e-6)
+            strength_matrix[:, h_idx] = np.where(h_prob > 0, np.abs((h_prob - h_mean) / safe_std), -999.0)
+        else: # 'diff'
+            strength_matrix[:, h_idx] = np.where(h_prob > 0, np.abs(h_prob - h_mean), -999.0)
+
+    # Now, for each day, pick the horizon with the highest Absolute Strength Score
+    signal_prob  = np.zeros(n_rows)
+    signal_dir   = np.zeros(n_rows, dtype=int)
+    signal_h     = np.zeros(n_rows, dtype=int)
+    signal_strength = np.zeros(n_rows)
+
+    for row in range(n_rows):
+        valid_h_idxs = [h_idx for h_idx in range(n_horizons) if prob_matrix[row, h_idx] > 0]
+        if not valid_h_idxs:
+            continue
+        
+        best_h_idx = max(valid_h_idxs, key=lambda idx: strength_matrix[row, idx])
+        
+        signal_prob[row]     = prob_matrix[row, best_h_idx]
+        signal_dir[row]      = dir_matrix[row, best_h_idx]
+        signal_h[row]        = target_horizons[best_h_idx]
+        signal_strength[row] = strength_matrix[row, best_h_idx]
 
     # ====================================================
     # 2. Compute ATR (fallback if not in df_prices)
@@ -161,6 +209,7 @@ def run_dynamic_backtest(
         yesterday_prob = 0.0
         yesterday_dir = 0
         yesterday_h = 0
+        yesterday_confidence = 0.0
         thresh = 0.0
         action = "Skipped (Day 0)"
         
@@ -169,6 +218,9 @@ def run_dynamic_backtest(
             yesterday_prob  = signal_prob[i - 1]
             yesterday_dir   = signal_dir[i - 1]
             yesterday_h     = signal_h[i - 1]
+            
+            if yesterday_prob > 0:
+                yesterday_confidence = yesterday_prob if yesterday_dir == 1 else 1.0 - yesterday_prob
             
             #  Adaptive Threshold (Rolling Window of last 120 signals)
             valid_past = [p for p in past_probs if p > 1e-6]
@@ -182,14 +234,14 @@ def run_dynamic_backtest(
             if in_position:
                 action = "Skipped (Already in position)"
             else:
-                if yesterday_prob >= thresh and yesterday_dir != 0 and yesterday_h > 0:
+                if yesterday_confidence >= thresh and yesterday_dir != 0 and yesterday_h > 0:
                     action = f"Traded ({'Long' if yesterday_dir == 1 else 'Short'})"
                     in_position      = True
                     entry_idx        = i
                     entry_price      = today_open
                     trade_side       = "Long" if yesterday_dir == 1 else "Short"
                     hold_days_target = yesterday_h
-                    entry_prob       = yesterday_prob
+                    entry_prob       = yesterday_confidence
                     entry_thresh     = thresh
                     invested_amount  = balance * position_size
                     
@@ -203,25 +255,26 @@ def run_dynamic_backtest(
                     else:
                         sl_price = entry_price * (0.95 if trade_side == "Long" else 1.05)
                 else:
-                    if yesterday_prob == 0:
+                    if yesterday_confidence == 0:
                         action = "Skipped (No signal)"
-                    elif yesterday_prob < thresh:
-                        action = f"Skipped (Confidence {yesterday_prob:.4f} < Threshold {thresh:.4f})"
+                    elif yesterday_confidence < thresh:
+                        action = f"Skipped (Confidence {yesterday_confidence:.4f} < Threshold {thresh:.4f})"
                     else:
                         action = "Skipped (Invalid signal)"
         
         daily_signals.append({
             'Date': df_prices.index[i].strftime('%Y-%m-%d'),
-            'Max_Confidence': yesterday_prob,
+            'Max_Confidence': yesterday_confidence,
             'Threshold': thresh,
             'Target_Horizon': yesterday_h,
             'Direction': yesterday_dir,
             'Action': action
         })
         
-        #  probability  threshold 
+        #  confidence  threshold 
         if signal_prob[i] > 0:
-            past_probs.append(signal_prob[i])
+            today_conf = signal_prob[i] if signal_dir[i] == 1 else 1.0 - signal_prob[i]
+            past_probs.append(today_conf)
         
         # ---- Exit Logic ----
         if in_position:

@@ -118,6 +118,7 @@ def print_backtest_config(stock_symbol: str, config_dict: dict):
     print(f"  Slippage    : {config_dict.get('slippage', 0.0005)*100:.2f}% per leg")
     print(f"  ATR SL Mult : {config_dict.get('sl_multiplier', 2.0)}x")
     print(f"  Prob Thresh : {config_dict.get('prob_threshold_pct', 85)}th percentile")
+    print(f"  Strength Mod: {config_dict.get('strength_mode', 'z_score')} (window: {config_dict.get('rolling_window', 252)})")
     print(f"  Horizons    : {config_dict.get('target_horizons', [])} days")
     start = config_dict.get('start_date', None)
     end = config_dict.get('end_date', None)

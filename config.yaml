@@ -106,11 +106,12 @@ walk_forward:
 # --- Backtest Configuration ---
 backtest:
   initial_capital: 100000
-  position_size: 0.7         # Percentage of capital to invest per trade (1.0 = 100%)
+  position_size: 0.9        # Percentage of capital to invest per trade (1.0 = 100%)
   transaction_cost: 0.001     # 0.1% per trade (entry + exit)
-  prob_threshold: 70          # Percentile for adaptive probability threshold
+  prob_threshold: 75          # Percentile for adaptive probability threshold
   sl_multiplier: 2.0          # ATR multiplier for Stop Loss
   atr_column: ATR14           # Column name for ATR in the feature CSV
+  strength_mode: "z_score"    # Horizon selection mode: 'z_score' or 'diff' (difference from historical mean)
   start_date: "2025-01-01"    # Backtest start date (null = use all data)
   end_date:   "2026-06-12"    # Backtest end date   (null = use all data)
 
