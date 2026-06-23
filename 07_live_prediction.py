@@ -223,6 +223,25 @@ def main():
             action = "SELL"
             print("\n[-] ACTION: [SELL/SHORT]")
             print(f"   Enter Short at Open tomorrow. Target hold {best_horizon} days. Stop-Loss: 2x ATR.")
+            
+        # --- AGENTIC VETO CHECK ---
+        try:
+            from src.models.self_reflection import AgenticJournal
+            journal = AgenticJournal(journal_path=os.path.join(SCRIPT_DIR, "data/models/trade_journal.json"), similarity_threshold=0.95)
+            # Prepare current features dict for distance comparison
+            # Extract the scaled row of the live tensor we predicted on
+            current_feat_dict = {feat_name: float(X_live_scaled[-1][idx]) for idx, feat_name in enumerate(features)}
+            
+            is_vetoed, veto_reason = journal.check_veto(current_feat_dict, action)
+            if is_vetoed:
+                print("\n[!] ===================================== [!]")
+                print("[!] VETO TRIGGERED BY AGENTIC SELF-REFLECTION")
+                print(f"[!] {veto_reason}")
+                print("[!] ===================================== [!]")
+                action = "HOLD (VETOED)"
+        except Exception as e:
+            print(f"[WARN] Failed to run Agentic Veto check: {e}")
+            
     else:
         action = "HOLD"
         print("\n[ ] ACTION: [STAY IN CASH]")

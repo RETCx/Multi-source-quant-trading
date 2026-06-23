@@ -69,13 +69,21 @@ def get_gmail_service():
         creds = Credentials.from_authorized_user_file(token_path, SCOPES)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
+            try:
+                creds.refresh(Request())
+            except Exception as e:
+                print(f"[NOTIFY] Token refresh failed (invalid/expired). Deleting {token_path} to re-authenticate.")
+                os.remove(token_path)
+                creds = None
+                
+        if not creds:
             if not os.path.exists(creds_path):
                 print(f"[NOTIFY] '{creds_path}' not found. Please download it from Google Cloud Console.")
                 return None
+            print("[NOTIFY] Opening browser for Google Login...")
             flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
             creds = flow.run_local_server(port=0)
+            
         with open(token_path, "w") as token:
             token.write(creds.to_json())
             
