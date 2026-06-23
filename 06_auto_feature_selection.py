@@ -139,10 +139,19 @@ def main():
             'features': current_features.copy()
         })
         
-        # Drop the least important feature
-        least_important_idx = np.argmin(importances)
-        dropped_feature = current_features.pop(least_important_idx)
-        logging.info(f"-> Dropped worst feature: {dropped_feature}")
+        # Drop the least important feature(s)
+        if len(current_features) > 40:
+            drop_count = 5
+        else:
+            drop_count = 1
+            
+        least_important_indices = np.argsort(importances)[:drop_count]
+        # Sort indices in reverse to pop safely without affecting other indices
+        dropped_features = []
+        for idx in sorted(least_important_indices, reverse=True):
+            dropped_features.append(current_features.pop(idx))
+            
+        logging.info(f"-> Dropped {drop_count} worst feature(s): {dropped_features}")
         
     # Find Best
     best_run = max(history, key=lambda x: x['sharpe'])

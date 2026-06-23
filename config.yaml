@@ -1,121 +1,98 @@
-# ==========================================
-# Trading Pipeline Configuration
-# ==========================================
-
-# --- Data Settings ---
 data_settings:
-  lookback_years: 10          
+  lookback_years: 10
   selected_tickers:
-    - GOOGL             
-
+  - AAPL
   news_keywords:
-    GOOGL: 'google|alphabet'
-    
+    AAPL: apple|iphone
 sources:
   use_tiingo_stocks: true
   use_tiingo_spy: true
   use_yfinance_vix: true
   use_alphavantage_fundamentals: true
-  use_bigquery_news: true
+  use_bigquery_news: false
   require_bq_confirmation: false
-
 data_path:
-  raw: 
-    OHLCV: "data/raw/OHLCV"
-    FUNDAMENTALS: "data/raw/FUNDAMENTALS"
-    NEWS: "data/raw/NEWS"
-  features: "data/features"
-  models: "data/models"
-
-# --- Reproducibility ---
+  raw:
+    OHLCV: data/raw/OHLCV
+    FUNDAMENTALS: data/raw/FUNDAMENTALS
+    NEWS: data/raw/NEWS
+  features: data/features
+  models: data/models
 random_seed: 42
-
-# --- Target Columns (Multi-Horizon Labels) ---
 target_columns:
-  - Target_1D
-  - Target_3D
-  - Target_5D
-  - Target_7D
-  - Target_10D
-  
-target_horizons: [1, 3, 5, 7, 10]
-target_rolling_window: 252    # Rolling Percentile window (~1 year of trading days)
-
-# --- Feature Exclusion List ---
-# Columns to exclude from model features
-# (price columns needed for backtest, noisy/redundant indicators)
+- Target_1D
+- Target_3D
+- Target_5D
+- Target_7D
+- Target_10D
+target_horizons:
+- 1
+- 3
+- 5
+- 7
+- 10
+target_rolling_window: 252
 exclude_columns:
-  # Raw price columns (needed for backtest but NOT for model input)
-  - adjOpen
-  - adjHigh
-  - adjLow
-  - adjClose
-  - adjVolume
-  - open
-  - high
-  - low
-  - close
-  - volume
-  - splitFactor
-  - divCash
-  - Net_Income_TTM
-  - EPS_TTM
-  - Total_Equity
-  - Book_Value_Per_Share
-  - Shares_Outstanding
-  - SMA10
-  - SMA20
-  - EMA10
-  - EMA20
-  - SPY_Close
-  - SPY_Open
-  - SPY_High
-  - SPY_Low
-  - SPY_Volume
-  - VIX_Close
-  - VIX_Open
-  - VIX_High
-  - VIX_Low
-  - VIX_Volume
-  - EPS_Raw
-  - EPS
-  - Net_Income
-
-# Use best features from feature selection (set to null to use all features)
-best_features_path: "data/models/best_features_GOOGL.json"
-
-# --- Multi-Head LSTM Parameters ---
+- adjOpen
+- adjHigh
+- adjLow
+- adjClose
+- adjVolume
+- open
+- high
+- low
+- close
+- volume
+- splitFactor
+- divCash
+- Net_Income_TTM
+- EPS_TTM
+- Total_Equity
+- Book_Value_Per_Share
+- Shares_Outstanding
+- SMA10
+- SMA20
+- EMA10
+- EMA20
+- SPY_Close
+- SPY_Open
+- SPY_High
+- SPY_Low
+- SPY_Volume
+- VIX_Close
+- VIX_Open
+- VIX_High
+- VIX_Low
+- VIX_Volume
+- EPS_Raw
+- EPS
+- Net_Income
+best_features_path: data/models/best_features_AAPL.json
 model_params:
-  sequence_length: 15         # Lookback window (15 trading days)
-  hidden_size: 64             # LSTM hidden units
-  num_layers: 2               # Number of stacked LSTM layers
-  dropout: 0.3                # Dropout rate for regularization
-  epochs: 100                 # Maximum training epochs
-  patience: 25                # Early stopping patience (epochs without improvement)
-  batch_size: 64             # Training batch size
-  learning_rate: 0.001        # Adam optimizer learning rate
-
-# --- Walk-Forward CV Configuration ---
+  sequence_length: 6
+  hidden_size: 64
+  num_layers: 3
+  dropout: 0.11141008356607306
+  epochs: 100
+  patience: 25
+  batch_size: 64
+  learning_rate: 0.0007508360878354052
 walk_forward:
-  min_train_size: 500         # Minimum training window (~2 years of trading days)
-  test_size: 60               # OOS test window per fold (~3 months)
-  gap: 20                     # Embargo gap to prevent data leakage (~1 month)
-  step_size: 40               # Slide step (overlap = test_size - step_size = 20 days)
-  max_train_size: null         # null = Expanding Window, integer = Sliding Window
-
-# --- Backtest Configuration ---
+  min_train_size: 500
+  test_size: 60
+  gap: 20
+  step_size: 40
+  max_train_size: null
 backtest:
   initial_capital: 100000
-  position_size: 0.9        # Percentage of capital to invest per trade (1.0 = 100%)
-  transaction_cost: 0.001     # 0.1% per trade (entry + exit)
-  prob_threshold: 75          # Percentile for adaptive probability threshold
-  sl_multiplier: 2.0          # ATR multiplier for Stop Loss
-  atr_column: ATR14           # Column name for ATR in the feature CSV
-  strength_mode: "z_score"    # Horizon selection mode: 'z_score' or 'diff' (difference from historical mean)
-  start_date: "2025-01-01"    # Backtest start date (null = use all data)
-  end_date:   "2026-06-12"    # Backtest end date   (null = use all data)
-
-# --- Trading Setup ---
+  position_size: 0.9
+  transaction_cost: 0.001
+  prob_threshold: 75
+  sl_multiplier: 2.0
+  atr_column: ATR14
+  strength_mode: z_score
+  start_date: '2025-01-01'
+  end_date: '2026-06-12'
 trading_setup:
   mode: paper
-  live_threshold: 0.70        # Absolute probability threshold for live execution (e.g. 0.70 means 70% confidence)
+  live_threshold: 0.7
