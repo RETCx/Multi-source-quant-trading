@@ -2,6 +2,7 @@ data_settings:
   lookback_years: 10
   selected_tickers:
   - AAPL
+  - GOOGL
   news_keywords:
     AAPL: apple|iphone
 sources:

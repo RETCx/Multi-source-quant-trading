@@ -145,27 +145,50 @@ def send_email(subject: str, body: str,
 
 def _format_email_html(subject: str, body: str) -> str:
     """Convert plain text body to a styled HTML email."""
-    # Extract action from subject to color code
-    action_color = "#4CAF50" # default green (BUY)
+    # Action colors for HTML headers or tags
+    color_map = {
+        'BUY': '#4CAF50',
+        'LONG': '#4CAF50',
+        'SELL': '#F44336',
+        'SHORT': '#F44336',
+        'HOLD': '#9E9E9E',
+        'VETO': '#FF9800'
+    }
+    
+    # Try to find an overarching color
+    main_color = '#333333'
     if "[SELL" in subject or "SHORT" in subject:
-        action_color = "#F44336" # Red
+        main_color = "#F44336"
+    elif "[BUY" in subject or "LONG" in subject:
+        main_color = "#4CAF50"
     elif "[HOLD" in subject:
-        action_color = "#9E9E9E" # Gray
+        main_color = "#9E9E9E"
 
     lines = body.split('\n')
     formatted_lines = []
+    
     for line in lines:
         if not line.strip():
             continue
-        if "ACTION" in line:
-            formatted_lines.append(f'<div style="margin-top: 25px; font-size: 20px; font-weight: 800; color: {action_color}; text-align: center; letter-spacing: 1px;">{line}</div>')
+        if line.startswith("STOCK: "):
+            # A new section header
+            formatted_lines.append(f'<div style="margin-top: 30px; font-size: 20px; font-weight: 800; color: #333; border-bottom: 2px solid #EEE; padding-bottom: 5px;">{line}</div>')
+        elif line.startswith("ACTION: "):
+            action_val = line.split(":", 1)[1].strip()
+            # Determine color
+            ac_color = "#333"
+            for k, v in color_map.items():
+                if k in action_val:
+                    ac_color = v
+                    break
+            formatted_lines.append(f'<div style="margin: 15px 0; font-size: 18px; font-weight: 800; color: {ac_color}; text-align: center; letter-spacing: 1px; border: 2px solid {ac_color}; padding: 10px; border-radius: 5px;">{line}</div>')
         elif "---" in line or "===" in line:
-            formatted_lines.append(f'<hr style="border: 0; height: 1px; background: #EAEAEA; margin: 20px 0;">')
+            pass # skip raw separators
         elif ":" in line:
             parts = line.split(":", 1)
-            formatted_lines.append(f'<div style="margin: 10px 0; display: flex; justify-content: space-between; font-size: 15px;"><span style="color: #666; font-weight: 600;">{parts[0]}:</span><span style="color: #111; font-weight: 500;">{parts[1].strip()}</span></div>')
+            formatted_lines.append(f'<div style="margin: 6px 0; display: flex; justify-content: space-between; font-size: 15px;"><span style="color: #666; font-weight: 600;">{parts[0]}:</span><span style="color: #111; font-weight: 500;">{parts[1].strip()}</span></div>')
         else:
-            formatted_lines.append(f'<div style="color: #111; font-weight: 700; font-size: 18px; margin-bottom: 10px; text-align: center;">{line}</div>')
+            formatted_lines.append(f'<div style="color: #444; font-size: 14px; margin-bottom: 5px;">{line}</div>')
             
     content_html = "".join(formatted_lines)
     
@@ -176,11 +199,11 @@ def _format_email_html(subject: str, body: str) -> str:
     <meta charset="utf-8">
     </head>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #F4F7F6; margin: 0; padding: 40px 15px;">
-      <div style="max-width: 480px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); overflow: hidden;">
-        <div style="background-color: {action_color}; color: #FFFFFF; padding: 24px 30px; text-align: center;">
+      <div style="max-width: 520px; margin: 0 auto; background: #FFFFFF; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); overflow: hidden;">
+        <div style="background-color: {main_color}; color: #FFFFFF; padding: 24px 30px; text-align: center;">
           <h2 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">{subject}</h2>
         </div>
-        <div style="padding: 32px 40px;">
+        <div style="padding: 10px 40px 30px;">
           {content_html}
         </div>
         <div style="text-align: center; padding: 20px; font-size: 12px; color: #999; background: #FAFAFA; border-top: 1px solid #F0F0F0;">
@@ -225,4 +248,26 @@ def format_signal_message(stock: str, predictions: dict, action: str,
     lines.append(f"ACTION: {action}")
     lines.append(f"Horizon: {best_horizon}D | Conf: {best_confidence:.1%}")
     
+    return "\n".join(lines)
+
+
+def format_multi_signal_message(final_actions: dict) -> str:
+    """Format prediction results for MULTIPLE stocks into a single message."""
+    lines = []
+    
+    for stock, data in final_actions.items():
+        lines.append(f"STOCK: {stock}")
+        
+        preds = data['prediction_details']
+        for tgt, det in preds.items():
+            conf = det['conf']
+            dir_str = det['dir']
+            mean = det['mean']
+            strength = det['strength_str']
+            lines.append(f"{tgt}: {conf:.1%} {dir_str} (Mean: {mean:.1%}, {strength})")
+            
+        lines.append(f"ACTION: {data['action']}")
+        lines.append(f"Decision: {data['best_horizon']}D | Conf: {data['best_prob']:.1%}")
+        lines.append(f"{'='*30}")
+        
     return "\n".join(lines)
