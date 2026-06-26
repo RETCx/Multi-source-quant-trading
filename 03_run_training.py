@@ -76,7 +76,7 @@ def train_stock(ticker, config):
             cv_config=CV_CONFIG,
             device=device,
             seed=SEED,
-            verbose=False  # Reduce verbosity when running parallel
+            verbose=True  # Reduce verbosity when running parallel
         )
         
         if not pipeline_results:

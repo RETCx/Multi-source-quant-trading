@@ -63,7 +63,7 @@ To use Google services (BigQuery for news, Gmail for notifications), you must pl
   3. Once authorized, the system will automatically create `token.json` to keep you logged in for future daily runs.
 
 ### 4. Configure the Execution Script (`run_bot.bat`)
-Open the `run_bot.bat` file in the root folder and change `quant_env` to your actual Conda environment name if it is different.
+Rename or copy `run_bot.example.bat` to `run_bot.bat`. Open the `run_bot.bat` file in the root folder and change `quant_env` to your actual Conda environment name if it is different. (Note: `run_bot.bat` is ignored by git so your local modifications won't cause conflicts when pulling updates).
 
 ### 5. Automate with Windows Task Scheduler
 1. Open **Task Scheduler**.
