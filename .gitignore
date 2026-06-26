@@ -14,4 +14,3 @@ model_summary_*.csv
 Architecture.md
 model_summary_GOOGL.csv 
 logs/
-run_bot.bat

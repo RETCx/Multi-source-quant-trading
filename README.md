@@ -62,33 +62,8 @@ To use Google services (BigQuery for news, Gmail for notifications), you must pl
   2. The first time you run the notifier, a browser window will pop up asking you to log in to your Google Account.
   3. Once authorized, the system will automatically create `token.json` to keep you logged in for future daily runs.
 
-### 4. Create the Execution Script (`run_bot.bat`)
-Since `run_bot.bat` is ignored by Git, **create a new file named `run_bot.bat` in the root folder** and paste the following code. (Change `quant_env` to your actual Conda environment name).
-
-```bat
-@echo off
-REM ============================================================
-REM MULTI-SOURCE QUANT TRADING BOT - DAILY PIPELINE LAUNCHER
-REM ============================================================
-
-REM Set working directory to where this .bat file lives
-cd /d "%~dp0"
-
-REM Activate Conda Environment
-call conda activate quant_env
-IF %ERRORLEVEL% NEQ 0 (
-    echo [BOT] Warning: Could not activate Conda environment.
-) ELSE (
-    echo [BOT] Conda environment activated successfully.
-)
-
-REM Run the daily pipeline
-echo [BOT] Starting daily pipeline at %date% %time%
-python 08_daily_execution.py
-
-echo [BOT] Pipeline finished at %date% %time%
-pause
-```
+### 4. Configure the Execution Script (`run_bot.bat`)
+Open the `run_bot.bat` file in the root folder and change `quant_env` to your actual Conda environment name if it is different.
 
 ### 5. Automate with Windows Task Scheduler
 1. Open **Task Scheduler**.
