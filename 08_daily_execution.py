@@ -1,8 +1,8 @@
 """
 08_daily_execution.py
 =====================
-Master Script สำหรับรัน Pipeline อัตโนมัติทุกวัน
-ออกแบบมาให้ถูกเรียกจาก Windows Task Scheduler ผ่าน run_bot.bat
+Master Script for running Pipeline automatically every day
+Designed to be called from Windows Task Scheduler via run_bot.bat
 
 Flow: Fetch Data -> Build Features -> Train Model -> Live Prediction -> Notify LINE
 """
@@ -14,14 +14,14 @@ import logging
 from datetime import datetime
 
 # ==========================================================
-# FIX PATH: บังคับให้ Working Directory เป็นที่อยู่ของไฟล์นี้เสมอ
-# ป้องกัน Error เวลา Windows Task Scheduler รันจาก C:\Windows\System32
+# FIX PATH: Force Working Directory to be the location of this file always
+# Prevent Error when Windows Task Scheduler runs from C:\Windows\System32
 # ==========================================================
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(SCRIPT_DIR)
 
 # ==========================================================
-# LOGGING: บันทึกผลลัพธ์ลงไฟล์ logs/
+# LOGGING: Save results to logs/ file
 # ==========================================================
 LOG_DIR = os.path.join(SCRIPT_DIR, "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -64,7 +64,7 @@ def run_step(script_name: str, step_label: str) -> bool:
         errors='replace'
     )
 
-    # อ่านบรรทัดต่อบรรทัดแบบ Real-time
+    # Read line by line in Real-time
     for line in iter(process.stdout.readline, ''):
         line = line.strip()
         if line:

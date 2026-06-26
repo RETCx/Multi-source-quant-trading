@@ -4,7 +4,7 @@ Supports: LINE Notify + Email (Gmail SMTP)
 
 Setup:
   LINE:  https://notify-bot.line.me/my/ -> Generate Token -> Add to .env
-  EMAIL: Gmail -> เปิด 2-Step Verification -> สร้าง App Password
+  EMAIL: Gmail -> Enable 2-Step Verification -> Create App Password
          https://myaccount.google.com/apppasswords
          Add SMTP_EMAIL and SMTP_PASSWORD to .env
 """
@@ -216,7 +216,7 @@ def _format_email_html(subject: str, body: str) -> str:
 
 
 # =============================================================================
-# UNIFIED: ส่งทุกช่องทางพร้อมกัน
+# UNIFIED: Send to all channels simultaneously
 # =============================================================================
 def notify_all(subject: str, body: str):
     """
