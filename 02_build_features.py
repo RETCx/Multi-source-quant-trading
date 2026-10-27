@@ -112,11 +112,12 @@ for ticker in tickers:
         if market_df is not None:
             df = df.join(market_df, how='left')
 
-        # --- Apply Fundamental Features ---
+        # --- Apply Fundamental Features (Point-in-Time Lag) ---
         fund_path = f"{DIR_FUND}/{ticker}_fundamentals.csv"
         if os.path.exists(fund_path):
             fund_df = pd.read_csv(fund_path, index_col='date', parse_dates=True)
-            df = fund.merge_and_calc_fundamentals(df, fund_df)
+            reporting_lag = config.get('fundamentals_reporting_lag_days', 45)
+            df = fund.merge_and_calc_fundamentals(df, fund_df, reporting_lag_days=reporting_lag)
             df = fund.calc_fundamental_features(df)
 
         # --- Apply Sentiment Features ---
