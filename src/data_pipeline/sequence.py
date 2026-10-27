@@ -43,18 +43,28 @@ class QuantSequenceDataset(Dataset):
         return self.X[idx], self.y[idx]
 
 
-def get_dataloaders(X_train_seq, y_train_seq, X_test_seq, y_test_seq, batch_size=256, seed=42):
+def get_dataloaders(
+    X_train_seq, y_train_seq,
+    X_val_seq=None, y_val_seq=None,
+    X_test_seq=None, y_test_seq=None,
+    batch_size=256,
+    seed=42
+):
     """
-    Wrap Sequence Dataset into DataLoader for use in Train loop
-    """
-    train_dataset = QuantSequenceDataset(X_train_seq, y_train_seq)
-    test_dataset = QuantSequenceDataset(X_test_seq, y_test_seq)
+    Wrap Sequence Dataset into DataLoaders for Train, Validation, and Test.
     
-    # Lock Seed of DataLoader Generator to make the result reproducible
+    Supports:
+      - 3-Way split (Train, Val, Test):
+          get_dataloaders(X_tr, y_tr, X_val, y_val, X_te, y_te, batch_size=...)
+          -> returns (train_loader, val_loader, test_loader)
+      - Legacy 2-Way split (Train, Test):
+          get_dataloaders(X_tr, y_tr, X_te, y_te, batch_size=...)
+          -> returns (train_loader, test_loader)
+    """
     g = torch.Generator()
     g.manual_seed(seed)
     
-    # Train Loader must Shuffle to prevent the model from remembering the data order
+    train_dataset = QuantSequenceDataset(X_train_seq, y_train_seq)
     train_loader = DataLoader(
         train_dataset, 
         batch_size=batch_size, 
@@ -63,11 +73,32 @@ def get_dataloaders(X_train_seq, y_train_seq, X_test_seq, y_test_seq, batch_size
         drop_last=False
     )
     
-    # Test Loader Do Not Shuffle to keep OOS time frame for verification
-    test_loader = DataLoader(
-        test_dataset, 
-        batch_size=batch_size, 
-        shuffle=False
-    )
-    
-    return train_loader, test_loader
+    # Check if this is the legacy 4-argument call (train and test only)
+    if X_test_seq is None and y_test_seq is None and X_val_seq is not None:
+        test_dataset = QuantSequenceDataset(X_val_seq, y_val_seq)
+        test_loader = DataLoader(
+            test_dataset, 
+            batch_size=batch_size, 
+            shuffle=False
+        )
+        return train_loader, test_loader
+        
+    val_loader = None
+    if X_val_seq is not None and y_val_seq is not None:
+        val_dataset = QuantSequenceDataset(X_val_seq, y_val_seq)
+        val_loader = DataLoader(
+            val_dataset,
+            batch_size=batch_size,
+            shuffle=False
+        )
+        
+    test_loader = None
+    if X_test_seq is not None and y_test_seq is not None:
+        test_dataset = QuantSequenceDataset(X_test_seq, y_test_seq)
+        test_loader = DataLoader(
+            test_dataset,
+            batch_size=batch_size,
+            shuffle=False
+        )
+        
+    return train_loader, val_loader, test_loader
