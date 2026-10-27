@@ -85,6 +85,7 @@ def train_stock(ticker, config):
         ensembled_oos = pipeline_results['ensembled_oos']
         raw_results = pipeline_results['raw_results']
         train_accs_mean = pipeline_results['train_accs_mean']
+        val_accs_mean = pipeline_results.get('val_accs_mean', {})
         
         results_summary = {}
         for head_idx, target_name in enumerate(TARGET_COLS):
@@ -96,6 +97,7 @@ def train_stock(ticker, config):
             
             results_summary[target_name] = {
                 'train_acc': train_accs_mean[target_name],
+                'val_acc': val_accs_mean.get(target_name, np.nan),
                 'test_acc': acc,
                 'avg_confidence': np.mean(f_probas)
             }
@@ -145,7 +147,7 @@ def train_stock(ticker, config):
         df_oos_csv = df_oos_csv.sort_index()
         exp.save_dataframe(df_oos_csv, "oos_predictions.csv")
         
-        return ticker, True, f"Successfully trained and saved artifacts. Run ID: {exp.run_id}"
+        return ticker, True, f"Successfully trained and saved artifacts. Run Directory: {exp.run_dir}"
         
     except Exception as e:
         return ticker, False, f"Exception occurred: {str(e)}"
