@@ -20,18 +20,19 @@ data_path:
   features: data/features
   models: data/models
 random_seed: 42
+fundamentals_reporting_lag_days: 45
 target_columns:
 - Target_1D
+- Target_2D
 - Target_3D
+- Target_4D
 - Target_5D
-- Target_7D
-- Target_10D
 target_horizons:
 - 1
+- 2
 - 3
+- 4
 - 5
-- 7
-- 10
 target_rolling_window: 252
 exclude_columns:
 - adjOpen
